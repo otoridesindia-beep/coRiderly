@@ -1,0 +1,5 @@
+[functions.phone-pin-auth]
+verify_jwt = false
+
+[functions.ride-payment]
+verify_jwt = false

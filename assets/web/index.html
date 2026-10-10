@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoRiderly — Find your ride</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <section class="intro-splash" id="intro-splash" aria-label="CoRiderly">
+    <div class="intro-brand"><span class="intro-mark" aria-hidden="true"><img src="logo_small.png" alt=""></span><span>CoRiderly</span></div>
+    <div class="car-journey" aria-hidden="true"><svg class="journey-car-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16h14l-1.2-6a2 2 0 0 0-2-1.6H8.2A2 2 0 0 0 6.3 10L5 16Z"/><path d="M7 16v2m10-2v2M7 13h.01M17 13h.01"/></svg></div>
+  </section>
+  <section class="splash-screen" id="splash-screen" aria-label="CoRiderly sign in" hidden>
+    <div class="splash-story">
+      <div class="splash-brand"><span class="splash-mark" aria-hidden="true"><img src="logo_small.png" alt=""></span>CoRiderly</div>
+      <div class="splash-copy">
+        <div class="eyebrow">Better journeys, together</div>
+        <h1>Your next ride starts here.</h1>
+        <p>Find a seat or share your drive. Connect with people going your way and make every trip count.</p>
+        <div class="journey-card" aria-hidden="true">
+          <div class="journey-label"><span>A better way to get there</span><span>↗</span></div>
+          <div class="journey-route">
+            <div class="journey-place"><strong>Where you are</strong><span>Your starting point</span></div>
+            <div class="journey-path"><svg class="journey-car" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16h14l-1.2-6a2 2 0 0 0-2-1.6H8.2A2 2 0 0 0 6.3 10L5 16Z"/><path d="M7 16v2m10-2v2M7 13h.01M17 13h.01"/></svg></div>
+            <div class="journey-place"><strong>Where you’re going</strong><span>Good company awaits</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="splash-caption">Good company. Shared journeys. Less road alone.</div>
+    </div>
+    <div class="login-side">
+      <form class="login-card" id="login-form">
+        <h2 id="auth-heading">Welcome aboard</h2>
+        <p class="login-intro">Use your mobile number and a 4-digit MPIN to continue.</p>
+        <div class="role-options" aria-label="Account options">
+          <button class="role-option auth-mode active" id="register-mode" type="button" aria-pressed="true"><span><strong>Create account</strong><small>Choose an MPIN</small></span></button>
+          <button class="role-option auth-mode" id="login-mode" type="button" aria-pressed="false"><span><strong>Log in</strong><small>Enter your MPIN</small></span></button>
+        </div>
+        <div class="login-fields">
+          <div class="field"><label for="login-mobile">Mobile number</label><input id="login-mobile" type="tel" placeholder="e.g. +91 98765 43210" autocomplete="tel" inputmode="tel" required /></div>
+          <div class="field"><label for="login-pin">4-digit MPIN</label><input id="login-pin" type="password" placeholder="Enter 4 digits" minlength="4" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" autocomplete="new-password" required /></div>
+        </div>
+        <button class="search-btn login-submit" type="submit">Create account</button>
+        <p class="login-note" id="login-note">Create an account with your mobile number and a 4-digit MPIN. You can log in after registration.</p>
+      </form>
+    </div>
+  </section>
+  <div class="app" id="main-app" hidden>
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><img src="logo_small.png" alt="">
+        </div>
+        <span>CoRiderly</span>
+      </div>
+      <nav class="nav" aria-label="Main navigation">
+        <a class="active" href="#rides">Find a ride</a>
+        <a href="#offer-screen" id="nav-offer">Offer a ride</a>
+      </nav>
+      <div class="profile-area">
+        <button class="profile" id="profile-button" aria-label="Open profile menu" aria-haspopup="true" aria-controls="profile-menu" aria-expanded="false"><span class="avatar" id="profile-avatar">AM</span><span id="profile-name">Alex Morgan</span></button>
+        <div class="profile-menu" id="profile-menu" hidden>
+          <div class="profile-summary"><strong id="menu-profile-name">Alex Morgan</strong><span id="menu-profile-email">Add your email address</span></div>
+          <button type="button" id="edit-profile-action">Edit profile</button>
+          <button type="button" class="logout-action" id="profile-logout-menu">Log out</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div id="rides-screen">
+      <section class="welcome">
+        <div>
+          <div class="eyebrow">Your next trip starts here</div>
+          <h1>Find your carpool</h1>
+          <p class="subtitle">Share the ride, split the cost, and make the journey better.</p>
+        </div>
+        <button class="offer-link" id="offer-trigger">＋ Offer a ride</button>
+      </section>
+
+      <section class="search-card" aria-label="Search for a ride">
+        <div class="search-top"><h2>Where would you like to go?</h2><span>Find a seat with a friendly driver</span></div>
+        <form class="search-fields" id="search-form">
+          <div class="field">
+            <label for="from">Leaving from</label>
+            <div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"/></svg><input id="from" type="text" placeholder="City or address" /></div>
+          </div>
+          <div class="field">
+            <label for="to">Going to</label>
+            <div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19 19 5M5 5h14v14"/></svg><input id="to" type="text" placeholder="City or address" /></div>
+          </div>
+          <div class="field">
+            <label for="date">Travel date</label>
+            <div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><input id="date" type="date" /></div>
+          </div>
+          <div class="field">
+            <label for="passengers">Passengers</label>
+            <div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5.2a3 3 0 0 1 0 5.6M18 14a5 5 0 0 1 3 4.6V20"/></svg><input id="passengers" type="number" min="1" max="6" value="1" /></div>
+          </div>
+          <button class="search-btn" type="submit">Search rides</button>
+        </form>
+      </section>
+
+      <section id="rides">
+        <div class="content-head">
+          <div><h2>Available rides <span class="ride-count" id="ride-count">3 rides</span></h2><p class="content-sub">Popular trips near you</p></div>
+          <select class="sort" id="sort" aria-label="Sort rides"><option value="recommended">Recommended</option><option value="price">Lowest price</option><option value="time">Earliest departure</option></select>
+        </div>
+        <div class="ride-list" id="ride-list">
+          <article class="ride-card" data-price="18" data-time="8">
+            <div class="route"><div class="times"><span>8:00 AM</span><span>10:35 AM</span></div><div class="route-track"><i class="dot"></i><i class="track-line"></i><i class="dot end"></i></div><div class="places"><span class="place">San Francisco, CA</span><span class="place">Sacramento, CA</span></div></div>
+            <div class="ride-meta"><div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>2 hr 35 min</div><div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 15h18l-1-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2l-1 6Z"/><path d="M5 15v2m14-2v2M6 12h.01M18 12h.01"/></svg>Toyota Prius · Quiet ride</div></div>
+            <div class="driver"><div class="driver-avatar">JM</div><div><div class="driver-name">Jordan M.</div><div class="rating"><strong>★ 4.9</strong> · 28 rides</div></div></div>
+            <div class="price-col"><div><div class="price">$18<small> / seat</small></div><div class="seats">2 seats left</div></div><button class="book-btn">Book seat</button></div>
+          </article>
+          <article class="ride-card" data-price="22" data-time="9">
+            <div class="route"><div class="times"><span>9:15 AM</span><span>11:50 AM</span></div><div class="route-track"><i class="dot"></i><i class="track-line"></i><i class="dot end"></i></div><div class="places"><span class="place">San Francisco, CA</span><span class="place">Sacramento, CA</span></div></div>
+            <div class="ride-meta"><div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>2 hr 35 min</div><div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 15h18l-1-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2l-1 6Z"/><path d="M5 15v2m14-2v2M6 12h.01M18 12h.01"/></svg>Honda Civic · A/C</div></div>
+            <div class="driver"><div class="driver-avatar blue">LC</div><div><div class="driver-name">Lena C.</div><div class="rating"><strong>★ 5.0</strong> · 16 rides</div></div></div>
+            <div class="price-col"><div><div class="price">$22<small> / seat</small></div><div class="seats">3 seats left</div></div><button class="book-btn">Book seat</button></div>
+          </article>
+          <article class="ride-card" data-price="15" data-time="11">
+            <div class="route"><div class="times"><span>11:30 AM</span><span>2:20 PM</span></div><div class="route-track"><i class="dot"></i><i class="track-line"></i><i class="dot end"></i></div><div class="places"><span class="place">San Francisco, CA</span><span class="place">Sacramento, CA</span></div></div>
+            <div class="ride-meta"><div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>2 hr 50 min</div><div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 15h18l-1-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2l-1 6Z"/><path d="M5 15v2m14-2v2M6 12h.01M18 12h.01"/></svg>Subaru Impreza · 1 stop</div></div>
+            <div class="driver"><div class="driver-avatar pink">AR</div><div><div class="driver-name">Avery R.</div><div class="rating"><strong>★ 4.8</strong> · 41 rides</div></div></div>
+            <div class="price-col"><div><div class="price">$15<small> / seat</small></div><div class="seats">1 seat left</div></div><button class="book-btn">Book seat</button></div>
+          </article>
+        </div>
+        <div class="empty" id="empty"><strong>No rides found</strong>Try another city or adjust your search.</div>
+      </section>
+      </div>
+
+      <section class="offer-screen screen-hidden" id="offer-screen" aria-labelledby="offer-title">
+        <button class="back-link" id="back-to-rides" type="button">← Back to rides</button>
+        <div class="offer-panel">
+          <div class="eyebrow">Share the journey</div>
+          <h2 id="offer-title">Offer a ride</h2>
+          <p class="offer-intro">Add your trip details and invite passengers to join your ride.</p>
+          <form id="offer-form">
+            <div class="offer-fields">
+              <div class="field"><label for="offer-from">Leaving from</label><input id="offer-from" type="text" placeholder="City or address" required /></div>
+              <div class="field"><label for="offer-to">Going to</label><input id="offer-to" type="text" placeholder="City or address" required /></div>
+              <div class="field"><label for="offer-pickup">Nearby pickup / boarding point</label><input id="offer-pickup" type="text" placeholder="e.g. Central Station" /></div>
+              <div class="field"><label for="offer-bags">How many bags?</label><input id="offer-bags" type="number" min="0" max="10" value="0" /></div>
+              <div class="field phone-field"><label for="offer-phone">Phone number</label><div class="input-wrap"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.2 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.11L8.1 9.9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.84.58 2.8.7A2 2 0 0 1 22 16.92Z"/></svg><input id="offer-phone" type="tel" placeholder="e.g. +91 98765 43210" autocomplete="tel" required /></div></div>
+              <div class="field"><label for="offer-date">Travel date</label><input id="offer-date" type="date" required /></div>
+              <div class="field"><label for="offer-time">Departure time</label><input id="offer-time" type="time" required /></div>
+              <div class="field"><label for="offer-car-name">Car name / model</label><input id="offer-car-name" type="text" placeholder="e.g. Maruti Ertiga" required /></div>
+              <div class="field"><label for="offer-car-number">Car registration number</label><input id="offer-car-number" type="text" placeholder="e.g. KA 01 AB 1234" required /></div>
+              <div class="field"><label for="offer-car-seats">Car seating capacity</label><select id="offer-car-seats" required><option value="5">5 seater</option><option value="7">7 seater</option></select></div>
+              <div class="field"><label for="offer-seats">Available passenger seats</label><input id="offer-seats" type="number" min="1" max="4" value="1" required /></div>
+              <div class="field"><label for="offer-price">Price per passenger (₹)</label><input id="offer-price" type="number" min="1" placeholder="e.g. 250" required /></div>
+            </div>
+            <div class="fee-note">
+              <span class="fee-icon" aria-hidden="true">₹</span>
+              <div><strong>₹39 payment per ride</strong>Pay securely through Razorpay before publishing. Each payment publishes one ride after verification.<small class="payment-note">Your ride appears to others only after payment is confirmed.</small></div>
+            </div>
+            <button class="search-btn offer-submit" type="submit">Pay ₹39 &amp; publish ride</button>
+            <div class="offer-success" id="offer-success" role="status">Payment confirmed. Your ride has been published.</div>
+          </form>
+        </div>
+      </section>
+    </main>
+    <section class="benefits" aria-label="Why ride with CoRiderly">
+      <article class="benefit">
+        <div class="benefit-icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 20h32v21H8z"/><path d="M15 20V9a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v11M20 20v6h8v-6M8 25h32"/></svg></div>
+        <h2>Travel everywhere</h2>
+        <p>Explore all over India with countless carpool rides.</p>
+      </article>
+      <article class="benefit">
+        <div class="benefit-icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 7h21v8H18zM14 15h21v8H14zM10 23h21v8H10z"/><circle cx="35" cy="34" r="10"/><path d="M31 34h8"/></svg></div>
+        <h2>Prices like nowhere</h2>
+        <p>Benefit from great-value shared costs on your carpool rides.</p>
+      </article>
+      <article class="benefit">
+        <div class="benefit-icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M24 4 42 11v11c0 11-7.5 18-18 22C13.5 40 6 33 6 22V11z"/><path d="m16 24 5 5 11-11"/></svg></div>
+        <h2>Ride with confidence</h2>
+        <p>Feel secure, knowing you're riding with carpool members with Verified Profiles.</p>
+      </article>
+    </section>
+    <nav class="bottom-nav" aria-label="App navigation">
+      <button type="button" class="bottom-nav-tab active" id="bottom-find" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        <span>Find</span>
+      </button>
+      <button type="button" class="bottom-nav-tab" id="bottom-offer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8m-4-4h8"/></svg>
+        <span>Offer</span>
+      </button>
+      <button type="button" class="bottom-nav-tab" id="bottom-my-rides">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 16h14l-1.2-6a2 2 0 0 0-2-1.6H8.2A2 2 0 0 0 6.3 10L5 16Z"/><path d="M7 16v2m10-2v2M7 13h.01M17 13h.01"/></svg>
+        <span>My rides</span>
+      </button>
+      <button type="button" class="bottom-nav-tab" id="bottom-bookings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a2 2 0 0 1 2 2v16l-8-4-8 4V5a2 2 0 0 1 2-2Z"/><path d="M9 8h6m-6 4h6"/></svg>
+        <span>Bookings</span>
+      </button>
+      <button type="button" class="bottom-nav-tab" id="bottom-profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+        <span>Profile</span>
+      </button>
+    </nav>
+  </div>
+  <dialog id="profile-dialog" aria-labelledby="profile-dialog-title">
+    <div class="dialog-content">
+      <div class="dialog-heading"><h2 id="profile-dialog-title">Edit profile</h2><button class="dialog-close" type="button" data-close-dialog="profile-dialog" aria-label="Close">×</button></div>
+      <form class="profile-form" id="profile-form">
+        <div class="field"><label for="profile-edit-name">Full name</label><input id="profile-edit-name" type="text" autocomplete="name" required /></div>
+        <div class="field"><label for="profile-edit-email">Email address</label><input id="profile-edit-email" type="email" autocomplete="email" placeholder="you@example.com" /></div>
+        <div class="field"><label for="profile-edit-phone">Phone number</label><input id="profile-edit-phone" type="tel" autocomplete="tel" placeholder="+91 98765 43210" /></div>
+        <button class="search-btn dialog-submit" type="submit">Save profile</button>
+        <button class="logout-button" id="profile-logout-dialog" type="button">Log out</button>
+      </form>
+    </div>
+  </dialog>
+  <dialog id="bookings-dialog" aria-labelledby="bookings-dialog-title">
+    <div class="dialog-content">
+      <div class="dialog-heading"><h2 id="bookings-dialog-title">My bookings</h2><button class="dialog-close" type="button" data-close-dialog="bookings-dialog" aria-label="Close">×</button></div>
+      <div class="booking-list" id="booking-list"><div class="booking-empty">You haven't booked a seat yet.</div></div>
+    </div>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="script.js"></script>
+</body>
+</html>

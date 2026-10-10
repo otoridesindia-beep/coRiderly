@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShareMyRide — Find your ride</title>
+  <style>
+    :root {
+      --purple: #7c3aed;
+      --purple-dark: #5b21b6;
+      --purple-soft: #f3edff;
+      --ink: #242138;
+      --muted: #77758a;
+      --line: #eceaf2;
+      --surface: #ffffff;
+      --canvas: #faf9fc;
+      --green: #16845e;
+      --shadow: 0 12px 35px rgba(40, 29, 78, .07);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:not(:disabled) {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      transition: transform .18s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease;
+    }
+    button:not(:disabled):active { transform: scale(.97); }
+    button:focus-visible { outline: 3px solid rgba(107, 27, 141, .28); outline-offset: 3px; }
+    .ui-ripple {
+      position: absolute;
+      z-index: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .35);
+      transform: scale(0);
+      animation: button-ripple .55s ease-out forwards;
+      pointer-events: none;
+    }
+    @keyframes button-ripple {
+      to { transform: scale(1); opacity: 0; }
+    }
+    .app { min-height: calc(100vh - 20px); margin: 10px; overflow: hidden; border-radius: 18px; }
+    .intro-splash { min-height: calc(100vh - 20px); margin: 10px; display: grid; place-content: center; justify-items: center; gap: 34px; overflow: hidden; border-radius: 18px; background: #43009E; }
+    .intro-splash[hidden] { display: none; }
+    .intro-brand { display: flex; align-items: center; gap: 13px; color: #fff; font-size: clamp(25px, 6vw, 34px); font-weight: 800; letter-spacing: -1.2px; }
+    .intro-mark { display: grid; width: 58px; height: 58px; place-items: center; border: 1px solid rgba(255, 255, 255, .72); border-radius: 18px; color: #fff; background: linear-gradient(145deg, #a78bfa 0%, #7c3aed 52%, #5b21b6 100%); box-shadow: 0 10px 28px rgba(0, 0, 0, .2), 0 0 30px rgba(124, 58, 237, .55); }
+    .intro-mark svg { width: 32px; height: 32px; }
+    .car-journey { position: relative; width: min(250px, 65vw); height: 24px; border-bottom: 2px dashed #75a9aa; }
+    .car-journey::before, .car-journey::after { position: absolute; bottom: -5px; width: 8px; height: 8px; border: 2px solid #c985df; border-radius: 50%; background: white; content: ""; }
+    .car-journey::before { left: 0; }
+    .car-journey::after { right: 0; background: #b8f1d8; border-color: #16845e; }
+    .journey-car-icon { position: absolute; bottom: -8px; left: 0; width: 33px; height: 27px; padding: 3px; border: 1px solid rgba(255, 255, 255, .8); border-radius: 8px; color: #fff; background: linear-gradient(145deg, #a78bfa 0%, #7c3aed 52%, #5b21b6 100%); box-shadow: 0 4px 14px rgba(0, 0, 0, .24), 0 0 14px rgba(124, 58, 237, .4); animation: car-ride 1.8s cubic-bezier(.4, 0, .2, 1) infinite alternate; }
+    @keyframes car-ride { to { left: calc(100% - 33px); } }
+    .splash-screen { min-height: calc(100vh - 24px); margin: 12px; overflow: hidden; border-radius: 18px; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(360px, .9fr); background: linear-gradient(135deg, #3b0764 0%, #6d28d9 54%, #a855f7 100%); box-shadow: 0 22px 60px rgba(40, 19, 66, .16); }
+    .splash-screen[hidden] { display: none; }
+    .splash-story { position: relative; isolation: isolate; display: flex; flex-direction: column; justify-content: space-between; padding: clamp(32px, 7vw, 88px); color: white; background: radial-gradient(ellipse at 14% 88%, rgba(243, 207, 255, .14), transparent 34%), radial-gradient(ellipse at 94% 15%, rgba(255, 255, 255, .12), transparent 30%); }
+    .splash-story::after { position: absolute; z-index: -1; right: -115px; bottom: -185px; width: 410px; height: 410px; border: 1px solid rgba(255,255,255,.12); border-radius: 50%; box-shadow: 0 0 0 36px rgba(255,255,255,.035), 0 0 0 74px rgba(255,255,255,.025); content: ""; }
+    .splash-copy { position: relative; z-index: 1; }
+    .splash-copy .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 8px 11px; border: 1px solid rgba(255,255,255,.22); border-radius: 999px; color: #f0d9fa; background: rgba(255,255,255,.08); font-size: 11px; letter-spacing: 1px; }
+    .splash-copy .eyebrow::before { width: 7px; height: 7px; border-radius: 50%; background: #b8f1d8; box-shadow: 0 0 0 4px rgba(184,241,216,.13); content: ""; }
+    .splash-copy h1 { max-width: 520px; margin: 18px 0 14px; font-size: clamp(42px, 5.8vw, 70px); letter-spacing: -3px; line-height: 1.02; }
+    .splash-copy p { max-width: 420px; color: #f0e4f4; font-size: 16px; line-height: 1.7; }
+    .journey-card { position: relative; width: min(100%, 390px); margin-top: 28px; padding: 13px 16px; border: 1px solid rgba(255,255,255,.23); border-radius: 15px; background: rgba(255,255,255,.11); box-shadow: 0 12px 30px rgba(35,8,50,.12); backdrop-filter: blur(10px); }
+    .journey-label { display: flex; justify-content: space-between; color: #ead8f1; font-size: 10px; font-weight: 750; letter-spacing: .8px; text-transform: uppercase; }
+    .journey-route { display: grid; grid-template-columns: 1fr 66px 1fr; align-items: center; gap: 9px; margin-top: 12px; }
+    .journey-place strong, .journey-place span { display: block; }
+    .journey-place strong { font-size: 13px; }
+    .journey-place span { margin-top: 3px; color: #e1cde9; font-size: 10px; }
+    .journey-path { position: relative; height: 2px; border-top: 2px dashed rgba(255,255,255,.6); }
+    .journey-path::before, .journey-path::after { position: absolute; top: -5px; width: 8px; height: 8px; border: 2px solid white; border-radius: 50%; background: #71318c; content: ""; }
+    .journey-path::before { left: 0; }
+    .journey-path::after { right: 0; background: #b8f1d8; border-color: #b8f1d8; }
+    .journey-car { position: absolute; top: -17px; left: 50%; width: 26px; height: 20px; padding: 3px; border-radius: 7px; color: var(--purple); background: white; transform: translateX(-50%); }
+    .splash-caption { display: flex; align-items: center; gap: 9px; color: #e8d8ed; font-size: 12px; }
+    .splash-caption::before { width: 23px; height: 1px; background: #d7aedf; content: ""; }
+    .splash-brand { display: flex; align-items: center; gap: 12px; font-size: 22px; font-weight: 800; letter-spacing: -.6px; }
+    .splash-mark { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 14px; color: var(--purple); background: white; }
+    .splash-mark svg { width: 24px; }
+    .splash-copy { max-width: 540px; margin: 54px 0; }
+    .splash-copy .eyebrow { color: #e8c9f3; }
+    .splash-copy h1 { margin: 18px 0 14px; font-size: clamp(42px, 5.8vw, 70px); letter-spacing: -3px; line-height: 1.02; }
+    .splash-copy p { max-width: 420px; margin: 0; color: #f0e4f4; font-size: 16px; line-height: 1.7; }
+    .splash-caption { color: #e8d8ed; font-size: 12px; }
+    .login-side { display: grid; place-items: center; padding: 28px; background: #fff; }
+    .login-card { width: min(100%, 430px); }
+    .login-card h2 { margin: 0 0 8px; font-size: 27px; letter-spacing: -.8px; }
+    .login-intro { margin: 0 0 24px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+    .role-options { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-bottom: 20px; }
+    .role-option { position: relative; }
+    .role-option input { position: absolute; opacity: 0; }
+    .role-option span { display: flex; min-height: 72px; flex-direction: column; justify-content: center; gap: 4px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 11px; cursor: pointer; transition: border-color .2s, background-color .2s, transform .2s, box-shadow .2s; }
+    .role-option:hover span { border-color: #c9a7d7; transform: translateY(-2px); box-shadow: 0 7px 18px rgba(40, 29, 78, .07); }
+    .role-option strong { font-size: 14px; }
+    .role-option small { color: var(--muted); font-size: 12px; }
+    .role-option input:checked + span { border-color: var(--purple); color: var(--purple); background: var(--purple-soft); box-shadow: 0 0 0 2px rgba(107, 27, 141, .08); }
+    .role-option input:focus-visible + span { outline: 3px solid rgba(107, 27, 141, .25); outline-offset: 2px; }
+    .auth-mode { padding: 0; border: 0; border-radius: 11px; color: var(--ink); background: transparent; text-align: left; }
+    .auth-mode.active span { border-color: var(--purple); color: var(--purple); background: var(--purple-soft); box-shadow: 0 0 0 2px rgba(107, 27, 141, .08); }
+    .login-fields { display: grid; gap: 15px; }
+    .login-fields input { width: 100%; height: 46px; padding: 0 13px; border: 1px solid #e8e6ee; border-radius: 10px; color: var(--ink); background: white; }
+    .login-fields input:focus { outline: 2px solid rgba(107, 27, 141, .2); border-color: var(--purple); }
+    .driver-documents { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; padding: 15px; border: 1px solid var(--line); border-radius: 12px; background: var(--canvas); }
+    .driver-documents[hidden] { display: none; }
+    .driver-documents h3 { grid-column: 1 / -1; margin: 0; font-size: 15px; }
+    .driver-documents p { grid-column: 1 / -1; margin: -6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .driver-documents .field { min-width: 0; }
+    .document-pair { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .driver-documents .field label { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; color: #656276; font-size: 11px; font-weight: 750; }
+    .document-icon { display: grid; flex: 0 0 25px; width: 25px; height: 25px; place-items: center; border-radius: 8px; color: var(--purple); background: #f1e5f5; }
+    .document-icon svg { width: 15px; height: 15px; }
+    .driver-documents input[type="file"] { width: 100%; min-width: 0; padding: 8px; border: 1px solid #e8e6ee; border-radius: 9px; color: var(--muted); background: #fff; font-size: 11px; }
+    .driver-documents input[type="file"]::file-selector-button { margin-right: 9px; padding: 7px 10px 7px 30px; border: 0; border-radius: 7px; color: var(--purple); background-color: var(--purple-soft); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B1B8D' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 16V4m-5 5 5-5 5 5'/%3E%3Cpath d='M5 14v5h14v-5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: 9px center; background-size: 14px; font: inherit; font-weight: 700; cursor: pointer; transition: background-color .2s, color .2s; }
+    .driver-documents input[type="file"]::file-selector-button:hover { color: white; background-color: var(--purple); }
+    .driver-documents input[type="file"]:focus-visible { outline: 2px solid rgba(107, 27, 141, .2); border-color: var(--purple); }
+    .login-submit { width: 100%; margin-top: 21px; }
+    .login-note { margin: 14px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; text-align: center; }
+    .topbar {
+      height: 76px;
+      padding: 0 max(5vw, 24px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+    .brand { display: flex; align-items: center; gap: 11px; font-size: 20px; font-weight: 800; letter-spacing: -.7px; }
+    .brand-mark { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; color: #fff; background: var(--purple); }
+    .brand-mark svg { width: 21px; }
+    .nav { display: flex; align-items: center; gap: 34px; color: #77758a; font-size: 14px; font-weight: 600; }
+    .nav a { color: inherit; text-decoration: none; }
+    .nav a.active { color: var(--purple); }
+    .profile-area { position: relative; }
+    .profile { display: flex; align-items: center; gap: 10px; border: 0; background: transparent; color: var(--ink); font-weight: 650; }
+    .avatar { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #f1e5f5; color: var(--purple); font-size: 13px; font-weight: 800; }
+    .profile-menu { position: absolute; z-index: 5; top: calc(100% + 14px); right: 0; width: 250px; padding: 9px; border: 1px solid var(--line); border-radius: 14px; background: white; box-shadow: var(--shadow); }
+    .profile-menu[hidden] { display: none; }
+    .profile-summary { padding: 10px 11px 13px; border-bottom: 1px solid var(--line); }
+    .profile-summary strong, .profile-summary span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .profile-summary span { margin-top: 4px; color: var(--muted); font-size: 12px; }
+    .profile-menu button { display: flex; align-items: center; width: 100%; padding: 11px; border: 0; border-radius: 8px; color: var(--ink); background: transparent; text-align: left; font-size: 13px; font-weight: 650; }
+    .profile-menu button:hover { color: var(--purple); background: var(--purple-soft); }
+    .profile .avatar { transition: transform .2s, box-shadow .2s; }
+    .profile:hover .avatar { transform: scale(1.08); box-shadow: 0 0 0 4px var(--purple-soft); }
+    .dialog-close:hover { color: var(--purple); background: var(--purple-soft); transform: rotate(90deg); }
+    dialog { width: min(440px, calc(100% - 32px)); max-height: 85vh; padding: 0; border: 1px solid var(--line); border-radius: 16px; color: var(--ink); box-shadow: 0 24px 70px rgba(30, 20, 55, .2); }
+    dialog::backdrop { background: rgba(31, 25, 45, .45); }
+    .dialog-content { padding: 24px; }
+    .dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 17px; }
+    .dialog-heading h2 { margin: 0; font-size: 21px; }
+    .dialog-close { width: 34px; height: 34px; border: 0; border-radius: 9px; color: var(--muted); background: var(--canvas); font-size: 20px; }
+    .profile-form { display: grid; gap: 15px; }
+    .profile-form input { width: 100%; height: 44px; padding: 0 12px; border: 1px solid #e8e6ee; border-radius: 9px; color: var(--ink); background: white; }
+    .profile-form input:focus { outline: 2px solid rgba(107, 27, 141, .2); border-color: var(--purple); }
+    .dialog-submit { width: 100%; margin-top: 3px; }
+    .booking-list { display: grid; gap: 10px; max-height: 55vh; overflow: auto; }
+    .booking-item, .booking-empty { padding: 14px; border: 1px solid var(--line); border-radius: 11px; background: var(--canvas); }
+    .booking-item strong { display: block; margin-bottom: 5px; font-size: 14px; }
+    .booking-item span, .booking-empty { color: var(--muted); font-size: 13px; line-height: 1.5; }
+    main { width: min(1120px, calc(100% - 48px)); margin: 42px auto 72px; }
+    .welcome { display: flex; justify-content: space-between; align-items: end; margin-bottom: 25px; }
+    .eyebrow { color: var(--purple); font-size: 12px; font-weight: 800; letter-spacing: 1.3px; text-transform: uppercase; }
+    h1 { margin: 8px 0 7px; font-size: clamp(28px, 4vw, 38px); letter-spacing: -1.5px; line-height: 1.12; }
+    .subtitle { margin: 0; color: var(--muted); font-size: 15px; }
+    .offer-link { border: 1px solid #e5d3ed; border-radius: 11px; padding: 12px 16px; color: var(--purple); background: #fff; font-weight: 700; }
+    .offer-link:hover { border-color: var(--purple); background: var(--purple-soft); box-shadow: 0 8px 20px rgba(107, 27, 141, .12); transform: translateY(-2px); }
+    .search-card { padding: 22px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); }
+    .search-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+    .search-top h2 { margin: 0; font-size: 16px; letter-spacing: -.2px; }
+    .search-top span { color: var(--muted); font-size: 13px; }
+    .search-fields { display: grid; grid-template-columns: 1fr 1fr 1fr 1.3fr auto; gap: 12px; align-items: end; }
+    .field { min-width: 0; }
+    .field label { display: block; margin: 0 0 8px 2px; color: #77758a; font-size: 11px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; }
+    .input-wrap { position: relative; }
+    .input-wrap svg { position: absolute; top: 14px; left: 13px; width: 17px; height: 17px; color: #89869a; pointer-events: none; }
+    .field input { width: 100%; height: 46px; outline: none; padding: 0 12px 0 39px; border: 1px solid #e8e6ee; border-radius: 10px; color: var(--ink); background: #fff; }
+    .field input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(107, 27, 141, .1); }
+    .search-btn { height: 46px; padding: 0 19px; border: 0; border-radius: 10px; color: #fff; background: var(--purple); font-weight: 750; white-space: nowrap; transition: background .2s, transform .2s; }
+    .search-btn:hover { background: var(--purple-dark); transform: translateY(-1px); }
+    .content-head { display: flex; justify-content: space-between; align-items: center; margin: 36px 0 17px; }
+    .content-head h2 { margin: 0; font-size: 21px; letter-spacing: -.6px; }
+    .ride-count { margin-left: 8px; color: var(--muted); font-size: 14px; font-weight: 500; }
+    .sort { padding: 9px 12px; border: 1px solid var(--line); border-radius: 9px; color: #656276; background: white; font-size: 13px; }
+    .ride-list { display: grid; gap: 14px; }
+    .ride-card { display: grid; grid-template-columns: minmax(240px, 1fr) 170px 156px; gap: 20px; align-items: center; padding: 20px 22px; border: 1px solid var(--line); border-radius: 15px; background: #fff; box-shadow: 0 5px 17px rgba(40, 29, 78, .035); transition: border-color .2s, transform .2s; }
+    .ride-card:hover { border-color: #dec6e8; transform: translateY(-2px); }
+    .route { display: grid; grid-template-columns: 55px 22px minmax(0, 1fr); align-items: center; }
+    .times { display: grid; gap: 24px; font-size: 14px; font-weight: 750; }
+    .route-track { height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+    .dot { width: 9px; height: 9px; border: 2px solid var(--purple); border-radius: 50%; background: white; }
+    .dot.end { background: var(--purple); }
+    .track-line { width: 1px; flex: 1; margin: 3px 0; border-left: 1px dashed #c8bddf; }
+    .places { display: grid; gap: 17px; min-width: 0; }
+    .place { overflow: hidden; color: var(--ink); font-size: 14px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+    .ride-meta { display: grid; gap: 10px; padding-left: 20px; border-left: 1px solid var(--line); color: #656276; font-size: 13px; }
+    .meta-row { display: flex; align-items: center; gap: 8px; }
+    .meta-row svg { width: 16px; height: 16px; color: #89869a; }
+    .driver { display: flex; align-items: center; gap: 10px; }
+    .driver-avatar { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; color: #704a32; background: #f5dfcc; font-size: 12px; font-weight: 800; flex: 0 0 auto; }
+    .driver-avatar.blue { color: #315c80; background: #d9edfa; }
+    .driver-avatar.pink { color: #944d67; background: #f8dce7; }
+    .driver-name { font-size: 13px; font-weight: 750; }
+    .rating { margin-top: 4px; color: #888598; font-size: 11px; }
+    .rating strong { color: #d28b21; }
+    .ride-contact a { display: inline-flex; align-items: center; gap: 4px; color: var(--purple); text-decoration: none; }
+    .ride-contact a:hover { text-decoration: underline; }
+    .ride-contact a svg { width: 13px; height: 13px; }
+    .price-col { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .price { font-size: 21px; font-weight: 800; letter-spacing: -.7px; }
+    .price small { display: block; margin-top: 2px; color: #888598; font-size: 11px; font-weight: 500; letter-spacing: 0; }
+    .seats { margin-top: 7px; color: var(--green); font-size: 11px; font-weight: 700; }
+    .book-btn { border: 0; border-radius: 9px; padding: 11px 14px; color: #fff; background: var(--purple); font-size: 13px; font-weight: 750; }
+    .book-btn:hover { background: var(--purple-dark); transform: translateY(-2px); box-shadow: 0 7px 16px rgba(82, 19, 109, .2); }
+    .ride-actions { display: grid; gap: 7px; }
+    .call-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 12px; border: 1px solid #e5d3ed; border-radius: 9px; color: var(--purple); background: white; text-decoration: none; font-size: 12px; font-weight: 750; }
+    .call-btn:hover { border-color: var(--purple); background: var(--purple-soft); }
+    .call-btn svg { width: 14px; height: 14px; }
+    .empty { display: none; padding: 42px 20px; border: 1px dashed #d9d4e4; border-radius: 15px; color: var(--muted); text-align: center; background: white; }
+    .empty strong { display: block; margin-bottom: 6px; color: var(--ink); }
+    .screen-hidden { display: none !important; }
+    .offer-screen { max-width: 760px; margin: 0 auto; }
+    .back-link { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 20px; padding: 0; border: 0; color: var(--purple); background: transparent; font-weight: 700; }
+    .back-link:hover { gap: 11px; }
+    .offer-panel { padding: 26px; border: 1px solid var(--line); border-radius: 18px; background: white; box-shadow: var(--shadow); }
+    .offer-panel h2 { margin: 0 0 7px; font-size: 23px; letter-spacing: -.6px; }
+    .offer-intro { margin: 0 0 22px; color: var(--muted); font-size: 14px; line-height: 1.55; }
+    .offer-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 17px 14px; }
+    .offer-fields .field input, .offer-fields .field select { width: 100%; height: 46px; padding: 0 13px; border: 1px solid #e8e6ee; border-radius: 10px; color: var(--ink); background: #fff; }
+    .offer-fields .field input:focus, .offer-fields .field select:focus { outline: 2px solid rgba(107, 27, 141, .2); border-color: var(--purple); }
+    .offer-fields input[type="number"] { padding-left: 13px; }
+    .offer-fields .phone-field input { padding-left: 39px; }
+    .fee-note { display: flex; align-items: flex-start; gap: 12px; margin-top: 22px; padding: 15px; border: 1px solid #e5d3ed; border-radius: 12px; color: #51456e; background: var(--purple-soft); font-size: 13px; line-height: 1.5; }
+    .fee-icon { display: grid; flex: 0 0 34px; width: 34px; height: 34px; place-items: center; border-radius: 10px; color: var(--purple); background: white; font-weight: 800; }
+    .fee-note strong { display: block; margin-bottom: 2px; color: var(--ink); font-size: 14px; }
+    .payment-note { display: block; margin-top: 5px; color: var(--muted); font-size: 12px; }
+    .offer-submit { width: 100%; margin-top: 20px; }
+    .offer-success { display: none; margin-top: 16px; padding: 14px; border-radius: 10px; color: #126345; background: #e9f7f0; font-size: 14px; line-height: 1.5; }
+    .benefits { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; padding: 18px max(5vw, 24px); background: #fff; border-top: 1px solid var(--line); }
+    .benefit { min-width: 0; display: flex; align-items: center; gap: 12px; }
+    .benefit-icon { flex: 0 0 44px; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: #071d42; background: #f3f6fa; }
+    .benefit-icon svg { width: 27px; height: 27px; }
+    .benefit h2 { margin: 0 0 4px; color: #101d35; font-size: 15px; letter-spacing: -.2px; }
+    .benefit p { margin: 0; color: #606b7d; font-size: 12px; line-height: 1.4; }
+    .toast { position: fixed; bottom: 24px; left: 50%; padding: 13px 18px; border-radius: 11px; color: white; background: #29243a; box-shadow: var(--shadow); opacity: 0; transform: translate(-50%, 12px); transition: .22s; pointer-events: none; font-size: 14px; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+    @media (max-width: 900px) {
+      .splash-screen { grid-template-columns: 1fr; }
+      .splash-story { min-height: 300px; padding: 32px max(7vw, 24px); }
+      .splash-copy { margin: 42px 0 20px; }
+      .splash-caption { display: none; }
+      .login-side { padding: 38px 24px; }
+      .search-fields { grid-template-columns: 1fr 1fr; }
+      .search-btn { width: 100%; }
+      .ride-card { grid-template-columns: minmax(220px, 1fr) 145px; }
+      .ride-meta { display: none; }
+    }
+    @media (max-width: 600px) {
+      .splash-screen { min-height: calc(100vh - 16px); margin: 8px; border-radius: 14px; }
+      .splash-story { min-height: 250px; padding: 24px 20px; }
+      .splash-copy { margin: 32px 0 0; }
+      .splash-copy h1 { font-size: clamp(36px, 10vw, 42px); }
+      .splash-copy p { font-size: 15px; }
+      .login-side { padding: 28px 18px; }
+      .driver-documents { padding: 12px; }
+      .document-pair { grid-template-columns: 1fr; gap: 12px; }
+      .driver-documents input[type="file"] { font-size: 10px; }
+      .benefits { grid-template-columns: 1fr; gap: 18px; padding: 20px; overflow: visible; }
+      .benefit { display: grid; grid-template-columns: 38px minmax(0, 1fr); column-gap: 11px; row-gap: 2px; }
+      .benefit-icon { grid-column: 1; grid-row: 1 / span 2; flex-basis: 38px; width: 38px; height: 38px; }
+      .benefit-icon svg { width: 24px; height: 24px; }
+      .benefit h2, .benefit p { grid-column: 2; }
+      .benefit h2 { font-size: 14px; }
+      .benefit p { font-size: 12px; }
+      .topbar { height: 62px; padding: 0 14px; gap: 9px; }
+      .brand { gap: 7px; font-size: 16px; letter-spacing: -.5px; }
+      .brand-mark { flex: 0 0 32px; width: 32px; height: 32px; border-radius: 10px; }
+      .brand-mark svg { width: 19px; }
+      .nav { gap: 0; font-size: 12px; }
+      .nav a:not(.active) { display: none; }
+      .profile { padding: 0; }
+      .profile .avatar { width: 34px; height: 34px; }
+      .profile span:last-child { display: none; }
+      main { width: calc(100% - 28px); margin: 24px auto 42px; }
+      .welcome { align-items: start; gap: 10px; margin-bottom: 19px; }
+      .welcome h1 { font-size: clamp(26px, 7vw, 32px); }
+      .offer-link { flex: 0 0 auto; padding: 9px 10px; font-size: 11px; white-space: nowrap; }
+      .subtitle { max-width: 260px; font-size: 13px; line-height: 1.5; }
+      .search-card { padding: 15px; }
+      .offer-panel { padding: 19px 15px; }
+      .offer-fields { grid-template-columns: 1fr; gap: 14px; }
+      .driver-documents { grid-template-columns: 1fr; }
+      .driver-documents h3, .driver-documents p { grid-column: auto; }
+      .search-top { margin-bottom: 14px; }
+      .search-top span { display: none; }
+      .search-fields { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px 8px; }
+      .search-fields .field { min-width: 0; }
+      .field label { font-size: 10px; letter-spacing: .5px; }
+      .field input { min-width: 0; font-size: 13px; padding-left: 34px; }
+      .input-wrap svg { left: 10px; }
+      .search-btn { grid-column: 1 / -1; min-height: 46px; }
+      .content-head { gap: 8px; margin-top: 26px; }
+      .content-head h2 { font-size: 17px; }
+      .ride-count { margin-left: 3px; font-size: 11px; }
+      .sort { max-width: 132px; padding: 8px 6px; font-size: 11px; }
+      .ride-card { grid-template-columns: minmax(0, 1fr); gap: 13px; padding: 15px; }
+      .route { grid-template-columns: 48px 20px minmax(0, 1fr); }
+      .places, .times { gap: 17px; }
+      .place { font-size: 13px; }
+      .price-col { padding-top: 12px; border-top: 1px solid var(--line); }
+      .price-col > div { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+      .price-col > .ride-actions { display: grid; grid-template-columns: 1fr; align-items: stretch; }
+      .price { font-size: 19px; }
+      .price small { display: inline; }
+      .seats { margin: 0; font-size: 10px; }
+      .book-btn { min-width: 104px; min-height: 42px; padding: 10px; }
+      .call-btn { min-height: 38px; }
+      .toast { bottom: 14px; width: calc(100% - 28px); text-align: center; }
+    }
+    @media (max-width: 380px) {
+      .topbar { padding: 0 10px; gap: 6px; }
+      .brand { font-size: 14px; }
+      .nav { display: none; }
+      .welcome { flex-wrap: wrap; }
+      .welcome > div { min-width: 0; }
+      .offer-link { margin-left: auto; }
+      .search-card { padding: 12px; }
+      .search-fields { grid-template-columns: 1fr; }
+      .search-btn { grid-column: 1; }
+      .content-head { align-items: start; }
+      .content-head h2 { max-width: 65%; }
+      .sort { max-width: 115px; }
+      .price-col { gap: 7px; }
+      .price-col > div { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <section class="intro-splash" id="intro-splash" aria-label="ShareMyRide">
+    <div class="intro-brand"><span class="intro-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14l-1.2-7a2 2 0 0 0-2-1.7H8.2a2 2 0 0 0-2 1.7L5 17Z"/><path d="M7 17v2m10-2v2M7 13h.01M17 13h.01M5 14h14"/></svg></span><span>ShareMyRide</span></div>
+    <div class="car-journey" aria-hidden="true"><svg class="journey-car-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16h14l-1.2-6a2 2 0 0 0-2-1.6H8.2A2 2 0 0 0 6.3 10L5 16Z"/><path d="M7 16v2m10-2v2M7 13h.01M17 13h.01"/></svg></div>
+  </section>
+  <section class="splash-screen" id="splash-screen" aria-label="ShareMyRide sign in" hidden>
+    <div class="splash-story">
+      <div class="splash-brand"><span class="splash-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14l-1.2-7a2 2 0 0 0-2-1.7H8.2a2 2 0 0 0-2 1.7L5 17Z"/><path d="M7 17v2m10-2v2M7 13h.01M17 13h.01M5 14h14"/></svg></span>ShareMyRide</div>
+      <div class="splash-copy">
+        <div class="eyebrow">Better journeys, together</div>
+        <h1>Your next ride starts here.</h1>
+        <p>Find a seat or share your drive. Connect with people going your way and make every trip count.</p>
+        <div class="journey-card" aria-hidden="true">
+          <div class="journey-label"><span>A better way to get there</span><span>↗</span></div>
+          <div class="journey-route">
+            <div class="journey-place"><strong>Where you are</strong><span>Your starting point</span></div>
+            <div class="journey-path"><svg class="journey-car" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16h14l-1.2-6a2 2 0 0 0-2-1.6H8.2A2 2 0 0 0 6.3 10L5 16Z"/><path d="M7 16v2m10-2v2M7 13h.01M17 13h.01"/></svg></div>
+            <div class="journey-place"><strong>Where you’re going</strong><span>Good company awaits</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="splash-caption">Good company. Shared journeys. Less road alone.</div>
+    </div>
+    <div class="login-side">
+      <form class="login-card" id="login-form">
+        <h2 id="auth-heading">Welcome aboard</h2>
+        <p class="login-intro">Use your mobile number and a 6-digit MPIN to continue.</p>
+        <div class="role-options" aria-label="Account options">
+          <button class="role-option auth-mode active" id="register-mode" type="button" aria-pressed="true"><span><strong>Create account</strong><small>Choose an MPIN</small></span></button>
+          <button class="role-option auth-mode" id="login-mode" type="button" aria-pressed="false"><span><strong>Log in</strong><small>Enter your MPIN</small></span></button>
+        </div>
+        <div class="login-fields">
+          <div class="field"><label for="login-mobile">Mobile number</label><input id="login-mobile" type="tel" placeholder="e.g. +91 98765 43210" autocomplete="tel" inputmode="tel" required /></div>
+          <div class="field"><label for="login-pin">6-digit MPIN</label><input id="login-pin" type="password" placeholder="Enter 6 digits" minlength="6" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="new-password" required /></div>
+        </div>
+        <button class="search-btn login-submit" type="submit">Create account</button>
+        <p class="login-note" id="login-note">Use a unique MPIN. Phone confirmation must be disabled in Supabase for PIN-only registration; otherwise Supabase will require SMS verification.</p>
+      </form>
+    </div>
+  </section>
+  <div class="app" id="main-app" hidden>
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14l-1.2-7a2 2 0 0 0-2-1.7H8.2a2 2 0 0 0-2 1.7L5 17Z"/><path d="M7 17v2m10-2v2M7 13h.01M17 13h.01M5 14h14"/></svg>
+        </div>
+        <span>ShareMyRide</span>
+      </div>
+      <nav class="nav" aria-label="Main navigation">
+        <a class="active" href="#rides">Find a ride</a>
+        <a href="#offer-screen" id="nav-offer">Offer a ride</a>
+      </nav>
+      <div class="profile-area">
+        <button class="profile" id="profile-button" aria-label="Open profile menu" aria-haspopup="true" aria-controls="profile-menu" aria-expanded="false"><span class="avatar" id="profile-avatar">AM</span><span id="profile-name">Alex Morgan</span></button>
+        <div class="profile-menu" id="profile-menu" hidden>
+          <div class="profile-summary"><strong id="menu-profile-name">Alex Morgan</strong><span id="menu-profile-email">Add your email address</span></div>
+          <button type="button" id="edit-profile-action">Edit profile</button>
+          <button type="button" id="my-rides-action">My offered rides</button>
+          <button type="button" id="my-bookings-action">My bookings</button>
+          <button type="button" id="all-rides-action">Show all rides</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div id="rides-screen">
+      <section class="welcome">
+        <div>
+          <div class="eyebrow">Your next trip starts here</div>
+          <h1>Find your carpool</h1>
+          <p class="subtitle">Share the ride, split the cost, and make the journey better.</p>
+        </div>
+        <button class="offer-link" id="offer-trigger">＋ Offer a ride</button>
+      </section>
+
+      <section class="search-card" aria-label="Search for a ride">
+        <div class="search-top"><h2>Where would you like to go?</h2><span>Find a seat with a friendly driver</span></div>
+        <form class="search-fields" id="search-form">
+          <div class="field">
+            <label for="from">Leaving from</label>
+            <div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z"/></svg><input id="from" type="text" placeholder="City or address" /></div>
+          </div>
+          <div class="field">
+            <label for="to">Going to</label>
+            <div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19 19 5M5 5h14v14"/></svg><input id="to" type="text" placeholder="City or address" /></div>
+          </div>
+          <div class="field">
+            <label for="date">Travel date</label>
+            <div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><input id="date" type="date" /></div>
+          </div>
+          <div class="field">
+            <label for="passengers">Passengers</label>
+            <div class="input-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5.2a3 3 0 0 1 0 5.6M18 14a5 5 0 0 1 3 4.6V20"/></svg><input id="passengers" type="number" min="1" max="6" value="1" /></div>
+          </div>
+          <button class="search-btn" type="submit">Search rides</button>
+        </form>
+      </section>
+
+      <section id="rides">
+        <div class="content-head">
+          <h2>Available rides <span class="ride-count" id="ride-count">3 rides</span></h2>
+          <select class="sort" id="sort" aria-label="Sort rides"><option value="recommended">Recommended</option><option value="price">Lowest price</option><option value="time">Earliest departure</option></select>
+        </div>
+        <div class="ride-list" id="ride-list">
+          <article class="ride-card" data-price="18" data-time="8">
+            <div class="route"><div class="times"><span>8:00 AM</span><span>10:35 AM</span></div><div class="route-track"><i class="dot"></i><i class="track-line"></i><i class="dot end"></i></div><div class="places"><span class="place">San Francisco, CA</span><span class="place">Sacramento, CA</span></div></div>
+            <div class="ride-meta"><div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>2 hr 35 min</div><div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 15h18l-1-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2l-1 6Z"/><path d="M5 15v2m14-2v2M6 12h.01M18 12h.01"/></svg>Toyota Prius · Quiet ride</div></div>
+            <div class="driver"><div class="driver-avatar">JM</div><div><div class="driver-name">Jordan M.</div><div class="rating"><strong>★ 4.9</strong> · 28 rides</div></div></div>
+            <div class="price-col"><div><div class="price">$18<small> / seat</small></div><div class="seats">2 seats left</div></div><button class="book-btn">Book seat</button></div>
+          </article>
+          <article class="ride-card" data-price="22" data-time="9">
+            <div class="route"><div class="times"><span>9:15 AM</span><span>11:50 AM</span></div><div class="route-track"><i class="dot"></i><i class="track-line"></i><i class="dot end"></i></div><div class="places"><span class="place">San Francisco, CA</span><span class="place">Sacramento, CA</span></div></div>
+            <div class="ride-meta"><div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>2 hr 35 min</div><div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 15h18l-1-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2l-1 6Z"/><path d="M5 15v2m14-2v2M6 12h.01M18 12h.01"/></svg>Honda Civic · A/C</div></div>
+            <div class="driver"><div class="driver-avatar blue">LC</div><div><div class="driver-name">Lena C.</div><div class="rating"><strong>★ 5.0</strong> · 16 rides</div></div></div>
+            <div class="price-col"><div><div class="price">$22<small> / seat</small></div><div class="seats">3 seats left</div></div><button class="book-btn">Book seat</button></div>
+          </article>
+          <article class="ride-card" data-price="15" data-time="11">
+            <div class="route"><div class="times"><span>11:30 AM</span><span>2:20 PM</span></div><div class="route-track"><i class="dot"></i><i class="track-line"></i><i class="dot end"></i></div><div class="places"><span class="place">San Francisco, CA</span><span class="place">Sacramento, CA</span></div></div>
+            <div class="ride-meta"><div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>2 hr 50 min</div><div class="meta-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 15h18l-1-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2l-1 6Z"/><path d="M5 15v2m14-2v2M6 12h.01M18 12h.01"/></svg>Subaru Impreza · 1 stop</div></div>
+            <div class="driver"><div class="driver-avatar pink">AR</div><div><div class="driver-name">Avery R.</div><div class="rating"><strong>★ 4.8</strong> · 41 rides</div></div></div>
+            <div class="price-col"><div><div class="price">$15<small> / seat</small></div><div class="seats">1 seat left</div></div><button class="book-btn">Book seat</button></div>
+          </article>
+        </div>
+        <div class="empty" id="empty"><strong>No rides found</strong>Try another city or adjust your search.</div>
+      </section>
+      </div>
+
+      <section class="offer-screen screen-hidden" id="offer-screen" aria-labelledby="offer-title">
+        <button class="back-link" id="back-to-rides" type="button">← Back to rides</button>
+        <div class="offer-panel">
+          <div class="eyebrow">Share the journey</div>
+          <h2 id="offer-title">Offer a ride</h2>
+          <p class="offer-intro">Add your trip details and invite passengers to join your ride.</p>
+          <form id="offer-form">
+            <div class="offer-fields">
+              <div class="field"><label for="offer-from">Leaving from</label><input id="offer-from" type="text" placeholder="City or address" required /></div>
+              <div class="field"><label for="offer-to">Going to</label><input id="offer-to" type="text" placeholder="City or address" required /></div>
+              <div class="field"><label for="offer-pickup">Nearby pickup / boarding point</label><input id="offer-pickup" type="text" placeholder="e.g. Central Station" /></div>
+              <div class="field"><label for="offer-bags">How many bags?</label><input id="offer-bags" type="number" min="0" max="10" value="0" /></div>
+              <div class="field phone-field"><label for="offer-phone">Phone number</label><div class="input-wrap"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.2 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.11L8.1 9.9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.84.58 2.8.7A2 2 0 0 1 22 16.92Z"/></svg><input id="offer-phone" type="tel" placeholder="e.g. +91 98765 43210" autocomplete="tel" required /></div></div>
+              <div class="field"><label for="offer-date">Travel date</label><input id="offer-date" type="date" required /></div>
+              <div class="field"><label for="offer-time">Departure time</label><input id="offer-time" type="time" required /></div>
+              <div class="field"><label for="offer-car-name">Car name / model</label><input id="offer-car-name" type="text" placeholder="e.g. Maruti Ertiga" required /></div>
+              <div class="field"><label for="offer-car-number">Car registration number</label><input id="offer-car-number" type="text" placeholder="e.g. KA 01 AB 1234" required /></div>
+              <div class="field"><label for="offer-car-seats">Car seating capacity</label><select id="offer-car-seats" required><option value="5">5 seater</option><option value="7">7 seater</option></select></div>
+              <div class="field"><label for="offer-seats">Available passenger seats</label><input id="offer-seats" type="number" min="1" max="4" value="1" required /></div>
+              <div class="field"><label for="offer-price">Price per passenger (₹)</label><input id="offer-price" type="number" min="1" placeholder="e.g. 250" required /></div>
+            </div>
+            <div class="fee-note">
+              <span class="fee-icon" aria-hidden="true">₹</span>
+              <div><strong>₹39 fee per successful ride</strong>Pay via Razorpay only after the ride is successfully completed. No fee is charged when you publish this ride.<small class="payment-note">Razorpay checkout must be connected to collect this payment.</small></div>
+            </div>
+            <button class="search-btn offer-submit" type="submit">Publish ride</button>
+            <div class="offer-success" id="offer-success" role="status">Your ride details are ready. The ₹39 Razorpay payment is due only after a successful ride.</div>
+          </form>
+        </div>
+      </section>
+    </main>
+    <section class="benefits" aria-label="Why ride with ShareMyRide">
+      <article class="benefit">
+        <div class="benefit-icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 20h32v21H8z"/><path d="M15 20V9a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v11M20 20v6h8v-6M8 25h32"/></svg></div>
+        <h2>Travel everywhere</h2>
+        <p>Explore all over India with countless carpool rides.</p>
+      </article>
+      <article class="benefit">
+        <div class="benefit-icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 7h21v8H18zM14 15h21v8H14zM10 23h21v8H10z"/><circle cx="35" cy="34" r="10"/><path d="M31 34h8"/></svg></div>
+        <h2>Prices like nowhere</h2>
+        <p>Benefit from great-value shared costs on your carpool rides.</p>
+      </article>
+      <article class="benefit">
+        <div class="benefit-icon" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M24 4 42 11v11c0 11-7.5 18-18 22C13.5 40 6 33 6 22V11z"/><path d="m16 24 5 5 11-11"/></svg></div>
+        <h2>Ride with confidence</h2>
+        <p>Feel secure, knowing you're riding with carpool members with Verified Profiles.</p>
+      </article>
+    </section>
+  </div>
+  <dialog id="profile-dialog" aria-labelledby="profile-dialog-title">
+    <div class="dialog-content">
+      <div class="dialog-heading"><h2 id="profile-dialog-title">Edit profile</h2><button class="dialog-close" type="button" data-close-dialog="profile-dialog" aria-label="Close">×</button></div>
+      <form class="profile-form" id="profile-form">
+        <div class="field"><label for="profile-edit-name">Full name</label><input id="profile-edit-name" type="text" autocomplete="name" required /></div>
+        <div class="field"><label for="profile-edit-email">Email address</label><input id="profile-edit-email" type="email" autocomplete="email" placeholder="you@example.com" /></div>
+        <div class="field"><label for="profile-edit-phone">Phone number</label><input id="profile-edit-phone" type="tel" autocomplete="tel" placeholder="+91 98765 43210" /></div>
+        <button class="search-btn dialog-submit" type="submit">Save profile</button>
+      </form>
+    </div>
+  </dialog>
+  <dialog id="bookings-dialog" aria-labelledby="bookings-dialog-title">
+    <div class="dialog-content">
+      <div class="dialog-heading"><h2 id="bookings-dialog-title">My bookings</h2><button class="dialog-close" type="button" data-close-dialog="bookings-dialog" aria-label="Close">×</button></div>
+      <div class="booking-list" id="booking-list"><div class="booking-empty">You haven't booked a seat yet.</div></div>
+    </div>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.setTimeout(() => {
+      document.getElementById('intro-splash').hidden = true;
+      document.getElementById('splash-screen').hidden = false;
+    }, prefersReducedMotion ? 1200 : 3200);
+
+    document.addEventListener('click', (event) => {
+      const button = event.target.closest('button:not(:disabled)');
+      if (!button || prefersReducedMotion) return;
+      const bounds = button.getBoundingClientRect();
+      const diameter = Math.max(bounds.width, bounds.height) * 1.6;
+      const ripple = document.createElement('span');
+      ripple.className = 'ui-ripple';
+      ripple.style.width = `${diameter}px`;
+      ripple.style.height = `${diameter}px`;
+      ripple.style.left = `${event.clientX - bounds.left - diameter / 2}px`;
+      ripple.style.top = `${event.clientY - bounds.top - diameter / 2}px`;
+      button.append(ripple);
+      window.setTimeout(() => ripple.remove(), 600);
+    });
+
+    const rideList = document.getElementById('ride-list');
+    let cards = [...rideList.querySelectorAll('.ride-card')];
+    const toast = document.getElementById('toast');
+    let toastTimer;
+    const supabaseUrl = 'https://ecefjyoaqyxdjyjsmpyd.supabase.co';
+    const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjZWZqeW9hcXl4ZGp5anNtcHlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE0MzEzMjksImV4cCI6MjEwNzAwNzMyOX0.OjXaQLer79sq6A-FK2_rX4-pA71ylESawGHabINxf28';
+    const profileStorageKey = 'sharemyride-profile';
+    let profileData = { name: 'Alex Morgan', email: '', phone: '' };
+    try {
+      profileData = { ...profileData, ...JSON.parse(localStorage.getItem(profileStorageKey) || '{}') };
+    } catch (error) {
+      // Continue with the default profile when browser storage is unavailable.
+    }
+    const bookings = [];
+
+    function updateProfileDisplay() {
+      const initials = profileData.name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'AM';
+      document.getElementById('profile-name').textContent = profileData.name;
+      document.getElementById('profile-avatar').textContent = initials;
+      document.getElementById('profile-button').setAttribute('aria-label', `Open profile menu for ${profileData.name}`);
+      document.getElementById('menu-profile-name').textContent = profileData.name;
+      document.getElementById('menu-profile-email').textContent = profileData.email || 'Add your email address';
+      const offerPhone = document.getElementById('offer-phone');
+      if (offerPhone && !offerPhone.value) offerPhone.value = profileData.phone;
+      cards.filter((card) => card.dataset.owner === 'true').forEach((card) => {
+        card.querySelector('.driver-name').textContent = profileData.name;
+        card.querySelector('.driver-avatar').textContent = initials;
+      });
+    }
+    updateProfileDisplay();
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+
+    document.getElementById('search-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const from = document.getElementById('from').value.trim().toLowerCase();
+      const to = document.getElementById('to').value.trim().toLowerCase();
+      let visible = 0;
+      cards.forEach((card) => {
+        const route = card.querySelector('.places').textContent.toLowerCase();
+        const matches = (!from || route.includes(from)) && (!to || route.includes(to));
+        card.style.display = matches ? '' : 'none';
+        if (matches) visible++;
+      });
+      document.getElementById('ride-count').textContent = `${visible} ${visible === 1 ? 'ride' : 'rides'}`;
+      document.getElementById('empty').style.display = visible ? 'none' : 'block';
+      if (visible) document.getElementById('rides').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    document.getElementById('sort').addEventListener('change', (event) => {
+      const key = event.target.value;
+      const sorted = [...cards].sort((a, b) => key === 'recommended' ? 0 : Number(a.dataset[key]) - Number(b.dataset[key]));
+      sorted.forEach((card) => rideList.appendChild(card));
+    });
+
+    const ridesScreen = document.getElementById('rides-screen');
+    const offerScreen = document.getElementById('offer-screen');
+    const navFind = document.querySelector('.nav a.active');
+    const navOffer = document.getElementById('nav-offer');
+
+    function showOfferScreen(showOffer) {
+      ridesScreen.classList.toggle('screen-hidden', showOffer);
+      offerScreen.classList.toggle('screen-hidden', !showOffer);
+      navFind.classList.toggle('active', !showOffer);
+      navOffer.classList.toggle('active', showOffer);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    document.getElementById('offer-trigger').addEventListener('click', () => showOfferScreen(true));
+    navOffer.addEventListener('click', (event) => {
+      event.preventDefault();
+      showOfferScreen(true);
+    });
+    navFind.addEventListener('click', (event) => {
+      event.preventDefault();
+      showOfferScreen(false);
+    });
+    document.getElementById('back-to-rides').addEventListener('click', () => showOfferScreen(false));
+
+    let authMode = 'register';
+    const authHeading = document.getElementById('auth-heading');
+    const authSubmit = document.querySelector('#login-form [type="submit"]');
+    const authPin = document.getElementById('login-pin');
+    const authNote = document.getElementById('login-note');
+
+    function setAuthMode(mode) {
+      authMode = mode;
+      const registering = mode === 'register';
+      document.getElementById('register-mode').classList.toggle('active', registering);
+      document.getElementById('register-mode').setAttribute('aria-pressed', String(registering));
+      document.getElementById('login-mode').classList.toggle('active', !registering);
+      document.getElementById('login-mode').setAttribute('aria-pressed', String(!registering));
+      authHeading.textContent = registering ? 'Welcome aboard' : 'Welcome back';
+      authSubmit.textContent = registering ? 'Create account' : 'Log in';
+      authPin.autocomplete = registering ? 'new-password' : 'current-password';
+      authNote.textContent = registering
+        ? 'Use a unique MPIN. Phone confirmation must be disabled in Supabase for PIN-only registration; otherwise Supabase will require SMS verification.'
+        : 'Enter the mobile number and 6-digit MPIN you used to register.';
+    }
+
+    document.getElementById('register-mode').addEventListener('click', () => setAuthMode('register'));
+    document.getElementById('login-mode').addEventListener('click', () => setAuthMode('login'));
+
+    document.getElementById('login-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const phone = document.getElementById('login-mobile').value.trim();
+      const pin = authPin.value;
+      const submitButton = event.currentTarget.querySelector('[type="submit"]');
+      submitButton.disabled = true;
+      submitButton.textContent = authMode === 'register' ? 'Creating account…' : 'Logging in…';
+      try {
+        const registering = authMode === 'register';
+        const url = registering
+          ? `${supabaseUrl}/auth/v1/signup`
+          : `${supabaseUrl}/auth/v1/token?grant_type=password`;
+        const name = `Member ${phone.replace(/\D/g, '').slice(-4)}`;
+        const body = registering
+          ? { phone, password: pin, data: { full_name: name, phone, role: 'rider' } }
+          : { phone, password: pin };
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { apikey: supabaseAnonKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.msg || result.message || result.error_description || (registering ? 'Could not create your account.' : 'Could not log in.'));
+        if (!result.session) {
+          authNote.textContent = 'Account created, but Supabase requires phone verification before login. Complete SMS verification or disable phone confirmations in your Supabase Auth settings.';
+          showToast('Phone verification is required by Supabase.');
+          return;
+        }
+        profileData = {
+          ...profileData,
+          name: result.user?.user_metadata?.full_name || name,
+          email: '',
+          phone
+        };
+        try { localStorage.setItem(profileStorageKey, JSON.stringify(profileData)); } catch (error) { /* Keep this session's profile in memory. */ }
+        updateProfileDisplay();
+        document.getElementById('splash-screen').hidden = true;
+        document.getElementById('main-app').hidden = false;
+        authPin.value = '';
+        showOfferScreen(false);
+      } catch (error) {
+        authNote.textContent = error.message;
+        showToast(error.message);
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = authMode === 'register' ? 'Create account' : 'Log in';
+      }
+    });
+
+    const profileButton = document.getElementById('profile-button');
+    const profileMenu = document.getElementById('profile-menu');
+    profileButton.addEventListener('click', () => {
+      const isOpen = !profileMenu.hidden;
+      profileMenu.hidden = isOpen;
+      profileButton.setAttribute('aria-expanded', String(!isOpen));
+    });
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('.profile-area')) {
+        profileMenu.hidden = true;
+        profileButton.setAttribute('aria-expanded', 'false');
+      }
+    });
+    document.getElementById('edit-profile-action').addEventListener('click', () => {
+      profileMenu.hidden = true;
+      profileButton.setAttribute('aria-expanded', 'false');
+      document.getElementById('profile-edit-name').value = profileData.name;
+      document.getElementById('profile-edit-email').value = profileData.email;
+      document.getElementById('profile-edit-phone').value = profileData.phone;
+      document.getElementById('profile-dialog').showModal();
+    });
+    document.getElementById('profile-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      profileData = {
+        name: document.getElementById('profile-edit-name').value.trim(),
+        email: document.getElementById('profile-edit-email').value.trim(),
+        phone: document.getElementById('profile-edit-phone').value.trim()
+      };
+      try { localStorage.setItem(profileStorageKey, JSON.stringify(profileData)); } catch (error) { /* Keep this session's profile in memory. */ }
+      updateProfileDisplay();
+      document.getElementById('profile-dialog').close();
+      showToast('Profile updated.');
+    });
+    document.querySelectorAll('[data-close-dialog]').forEach((button) => {
+      button.addEventListener('click', () => document.getElementById(button.dataset.closeDialog).close());
+    });
+    document.getElementById('my-rides-action').addEventListener('click', () => {
+      profileMenu.hidden = true;
+      profileButton.setAttribute('aria-expanded', 'false');
+      showOfferScreen(false);
+      let visible = 0;
+      cards.forEach((card) => {
+        const isMine = card.dataset.owner === 'true';
+        card.style.display = isMine ? '' : 'none';
+        if (isMine) visible++;
+      });
+      document.getElementById('ride-count').textContent = `${visible} ${visible === 1 ? 'ride' : 'rides'}`;
+      document.getElementById('empty').innerHTML = '<strong>No rides offered yet</strong>Your published rides will appear here.';
+      document.getElementById('empty').style.display = visible ? 'none' : 'block';
+    });
+    document.getElementById('all-rides-action').addEventListener('click', () => {
+      profileMenu.hidden = true;
+      profileButton.setAttribute('aria-expanded', 'false');
+      showOfferScreen(false);
+      cards.forEach((card) => { card.style.display = ''; });
+      document.getElementById('ride-count').textContent = `${cards.length} ${cards.length === 1 ? 'ride' : 'rides'}`;
+      document.getElementById('empty').innerHTML = '<strong>No rides found</strong>Try another city or adjust your search.';
+      document.getElementById('empty').style.display = 'none';
+    });
+    document.getElementById('my-bookings-action').addEventListener('click', () => {
+      profileMenu.hidden = true;
+      profileButton.setAttribute('aria-expanded', 'false');
+      const list = document.getElementById('booking-list');
+      list.replaceChildren();
+      if (!bookings.length) {
+        const emptyMessage = document.createElement('div');
+        emptyMessage.className = 'booking-empty';
+        emptyMessage.textContent = 'You haven\'t booked a seat yet.';
+        list.append(emptyMessage);
+      } else {
+        bookings.forEach((booking) => {
+          const item = document.createElement('div');
+          item.className = 'booking-item';
+          const route = document.createElement('strong');
+          route.textContent = booking.route;
+          const details = document.createElement('span');
+          details.textContent = `${booking.time} · ${booking.price}`;
+          item.append(route, details);
+          list.append(item);
+        });
+      }
+      document.getElementById('bookings-dialog').showModal();
+    });
+
+    const carCapacity = document.getElementById('offer-car-seats');
+    const passengerSeats = document.getElementById('offer-seats');
+    carCapacity.addEventListener('change', () => {
+      const maxPassengerSeats = Number(carCapacity.value) - 1;
+      passengerSeats.max = String(maxPassengerSeats);
+      if (Number(passengerSeats.value) > maxPassengerSeats) passengerSeats.value = String(maxPassengerSeats);
+    });
+    document.getElementById('offer-form').addEventListener('reset', () => {
+      window.setTimeout(() => { passengerSeats.max = String(Number(carCapacity.value) - 1); }, 0);
+    });
+
+    document.getElementById('offer-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const value = (id) => document.getElementById(id).value.trim();
+      const from = value('offer-from');
+      const to = value('offer-to');
+      const phone = value('offer-phone');
+      const seats = value('offer-seats');
+      const carName = value('offer-car-name');
+      const carNumber = value('offer-car-number');
+      const carSeats = value('offer-car-seats');
+      const price = value('offer-price');
+      const departure = value('offer-time');
+      const date = value('offer-date');
+      const pickup = value('offer-pickup');
+      const bags = value('offer-bags');
+      const [hour, minute] = departure.split(':').map(Number);
+      const displayTime = new Date(2000, 0, 1, hour, minute).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      const card = document.createElement('article');
+      card.className = 'ride-card';
+      card.dataset.owner = 'true';
+      card.dataset.price = price;
+      card.dataset.time = hour + minute / 60;
+      card.innerHTML = '<div class="route"><div class="times"><span class="departure-time"></span><span class="seat-count"></span></div><div class="route-track"><i class="dot"></i><i class="track-line"></i><i class="dot end"></i></div><div class="places"><span class="place from-place"></span><span class="place to-place"></span></div></div><div class="ride-meta"><div class="meta-row ride-date"></div><div class="meta-row ride-extras"></div></div><div class="driver"><div class="driver-avatar">AM</div><div><div class="driver-name">Alex Morgan</div></div></div><div class="price-col"><div><div class="price ride-price"></div><div class="seats"></div></div><div class="ride-actions"><button class="book-btn" type="button">Book seat</button><a class="call-btn" aria-label="Call driver"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.2 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.11L8.1 9.9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.84.58 2.8.7A2 2 0 0 1 22 16.92Z"/></svg>Call</a></div></div>';
+      card.querySelector('.driver-name').textContent = profileData.name;
+      card.querySelector('.driver-avatar').textContent = profileData.name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'AM';
+      card.querySelector('.departure-time').textContent = displayTime;
+      card.querySelector('.seat-count').textContent = `${seats} seats`;
+      card.querySelector('.from-place').textContent = from;
+      card.querySelector('.to-place').textContent = to;
+      card.querySelector('.ride-date').textContent = `Travel date: ${date}`;
+      card.querySelector('.ride-extras').textContent = `${carName} · ${carSeats}-seater · ${carNumber}${pickup ? ` · Pickup: ${pickup}` : ''} · ${bags} bags`;
+      card.querySelector('.ride-price').textContent = `₹${price}`;
+      card.querySelector('.ride-price').append(document.createElement('small'));
+      card.querySelector('.ride-price small').textContent = ' / seat';
+      card.querySelector('.seats').textContent = `${seats} seats available`;
+      const contact = document.createElement('a');
+      contact.href = `tel:${phone.replace(/[^+\d]/g, '')}`;
+      contact.setAttribute('aria-label', `Call driver at ${phone}`);
+      contact.innerHTML = '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.2 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.11L8.1 9.9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.84.58 2.8.7A2 2 0 0 1 22 16.92Z"/></svg>';
+      card.querySelector('.call-btn').href = contact.href;
+      card.querySelector('.call-btn').setAttribute('aria-label', contact.getAttribute('aria-label'));
+      rideList.prepend(card);
+      cards = [...rideList.querySelectorAll('.ride-card')];
+      cards.forEach((ride) => { ride.style.display = ''; });
+      document.getElementById('ride-count').textContent = `${cards.length} ${cards.length === 1 ? 'ride' : 'rides'}`;
+      document.getElementById('empty').style.display = 'none';
+      document.getElementById('offer-success').style.display = 'block';
+      showOfferScreen(false);
+      showToast('Ride published — your contact number is visible in Find a ride.');
+      event.target.reset();
+    });
+
+    rideList.addEventListener('click', (event) => {
+      const button = event.target.closest('.book-btn');
+      if (!button) return;
+      const card = button.closest('.ride-card');
+      const existingIndex = bookings.findIndex((booking) => booking.card === card);
+      if (existingIndex >= 0) {
+        bookings.splice(existingIndex, 1);
+        button.textContent = 'Book seat';
+        button.removeAttribute('aria-pressed');
+        showToast('Booking removed.');
+        return;
+      }
+      const places = [...card.querySelectorAll('.place')].map((place) => place.textContent.trim());
+      const time = card.querySelector('.times span')?.textContent.trim() || 'Departure time unavailable';
+      const price = card.querySelector('.price')?.textContent.trim() || 'Price unavailable';
+      bookings.push({ card, route: places.join(' → '), time, price });
+      button.textContent = 'Booked';
+      button.setAttribute('aria-pressed', 'true');
+      showToast('Seat booked — find it under My bookings.');
+    });
+  </script>
+</body>
+</html>
