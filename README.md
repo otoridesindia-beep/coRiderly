@@ -30,13 +30,39 @@ and applies phone/IP attempt limits. Never put the service-role key or
    supabase functions deploy phone-pin-auth --project-ref ecefjyoaqyxdjyjsmpyd
    ```
 
-6. Build the app with the project URL and anon key:
+6. Create and keep a private Android upload key. Do this once, back up the
+   keystore securely, and never commit either file:
 
    ```powershell
-   flutter build apk --release `
+   keytool -genkey -v -keystore android\app\upload-keystore.jks `
+     -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+   ```
+
+   Create `android\key.properties` with the values for that key. The path in
+   `storeFile` is relative to `android\app`:
+
+   ```properties
+   storePassword=<keystore-password>
+   keyPassword=<key-password>
+   keyAlias=upload
+   storeFile=upload-keystore.jks
+   ```
+
+   `android\.gitignore` excludes `key.properties` and Java keystores. Keep an
+   encrypted backup of the keystore and passwords; you need the upload key for
+   future updates.
+
+7. Build a signed Android App Bundle with the project URL and anon key:
+
+   ```powershell
+   flutter build appbundle --release `
      --dart-define=SUPABASE_URL=https://ecefjyoaqyxdjyjsmpyd.supabase.co `
      --dart-define=SUPABASE_ANON_KEY=<anon-key>
    ```
+
+   Use `assets\play-store\app-icon-512.png` as the Play Console app icon.
+   Upload `build\app\outputs\bundle\release\app-release.aab` to a Play Console
+   internal or closed testing track before requesting production release.
 
 The four-digit PIN has only 10,000 possible values. The function limits attempts
 to five per phone per 15 minutes and 30 per source IP per 15 minutes; use a
