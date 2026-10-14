@@ -120,6 +120,12 @@ platform fee.
    profile creation when a Supabase Auth user registers.
 4. `supabase/migrations/20261009000400_require_payment_before_ride_publish.sql`
    blocks direct ride inserts and adds server-only payment/publish operations.
+5. `supabase/migrations/20261014000000_driver_reviews.sql` adds shared rider
+   reviews, booking-backed review permissions, and access to booked rides.
+
+Apply the new driver-review migration after the four existing migrations in
+the Supabase SQL Editor (or through the project's linked Supabase CLI) before
+using seat bookings or rider feedback in the app.
 
 The new tables use row-level security. Document review status and payment
 records must be written by trusted backend code, not directly by the app.
@@ -127,8 +133,10 @@ Never store an MPIN or raw Aadhaar number in these tables.
 
 The HTML ride screen loads open rides for authenticated users. Ride publication
 uses the `ride-payment` Edge Function and requires the verified per-ride
-payment described above. Bookings and selected documents remain local until
-their screens are separately connected to Supabase.
+payment described above. Seat bookings and driver reviews use Supabase. Riders
+can review a driver after the trip date only if they have a confirmed or
+completed booking; reviews are visible to authenticated users on each ride
+card. Selected documents remain local and are not uploaded or verified.
 
 ## Local HTML experience
 

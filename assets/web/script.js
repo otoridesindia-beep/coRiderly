@@ -1,8 +1,4 @@
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    window.setTimeout(() => {
-      document.getElementById('intro-splash').hidden = true;
-      document.getElementById('splash-screen').hidden = false;
-    }, prefersReducedMotion ? 1200 : 3200);
 
     document.addEventListener('click', (event) => {
       const button = event.target.closest('button:not(:disabled)');
@@ -213,6 +209,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
           <div class="ride-driver-copy">
             <strong class="ride-driver-name"></strong>
             <span class="ride-driver-caption"></span>
+            <button class="ride-feedback-link" type="button">★ View rider feedback</button>
           </div>
         </div>
         <div class="ride-card-footer">
@@ -232,6 +229,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
           </div>
         </div>`;
       card.dataset.rideId = ride.id;
+      card.dataset.driverId = ride.driver_id;
       card.dataset.owner = String(isMine);
       card.dataset.price = String(ride.price_per_seat);
       card.dataset.travelDate = ride.travel_date;
@@ -266,6 +264,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       } else {
         card.querySelector('.ride-call-action').remove();
         card.querySelector('.ride-whatsapp-action').remove();
+        card.querySelector('.ride-card-actions').classList.add('ride-card-actions-no-contact');
       }
       return card;
     }
@@ -279,6 +278,66 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       document.getElementById('ride-count').textContent = `${cards.length} ${cards.length === 1 ? 'ride' : 'rides'}`;
       document.getElementById('empty').style.display = cards.length ? 'none' : 'block';
     }
+
+    const driverReviewsDialog = document.getElementById('driver-reviews-dialog');
+    const driverReviewsSummary = document.getElementById('driver-reviews-summary');
+    const driverReviewsList = document.getElementById('driver-reviews-list');
+    rideList.addEventListener('click', async (event) => {
+      const button = event.target.closest('.ride-feedback-link');
+      if (!button) return;
+      const card = button.closest('.ride-card');
+      const driverId = card?.dataset.driverId;
+      if (!driverId) {
+        showToast('Driver feedback is unavailable for this ride.');
+        return;
+      }
+      const driverName = card.querySelector('.ride-driver-name')?.textContent || 'this driver';
+      driverReviewsDialog.dataset.driverId = driverId;
+      document.getElementById('driver-reviews-title').textContent = `Feedback for ${driverName}`;
+      driverReviewsSummary.textContent = 'Loading rider feedback…';
+      driverReviewsList.replaceChildren();
+      driverReviewsDialog.showModal();
+      try {
+        const reviews = await supabaseRequest(
+          `rest/v1/driver_reviews?select=rating,feedback,created_at&driver_id=eq.${encodeURIComponent(driverId)}&order=created_at.desc&limit=50`
+        );
+        if (driverReviewsDialog.dataset.driverId !== driverId) return;
+        driverReviewsSummary.textContent = reviews.length
+          ? `${(reviews.reduce((total, review) => total + review.rating, 0) / reviews.length).toFixed(1)} ★ average · ${reviews.length === 50 ? 'latest 50 reviews' : `${reviews.length} ${reviews.length === 1 ? 'review' : 'reviews'}`}`
+          : '';
+        if (!reviews.length) {
+          const empty = document.createElement('div');
+          empty.className = 'driver-reviews-empty';
+          empty.textContent = 'No rider feedback yet. Reviews from riders who completed a trip with this driver will appear here.';
+          driverReviewsList.append(empty);
+          return;
+        }
+        reviews.forEach((review) => {
+          const item = document.createElement('article');
+          item.className = 'driver-review-item';
+          const rating = document.createElement('strong');
+          rating.textContent = `${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)} (${review.rating}/5)`;
+          const feedback = document.createElement('p');
+          feedback.textContent = review.feedback;
+          const date = document.createElement('time');
+          date.dateTime = review.created_at;
+          date.textContent = new Date(review.created_at).toLocaleDateString([], {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+          });
+          item.append(rating, feedback, date);
+          driverReviewsList.append(item);
+        });
+      } catch (error) {
+        if (driverReviewsDialog.dataset.driverId !== driverId) return;
+        driverReviewsSummary.textContent = '';
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'driver-reviews-empty';
+        errorMessage.textContent = `Could not load rider feedback. ${error.message}`;
+        driverReviewsList.append(errorMessage);
+      }
+    });
 
     document.getElementById('search-form').addEventListener('submit', (event) => {
       event.preventDefault();
@@ -387,6 +446,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
     }, { passive: true });
 
     let authMode = 'register';
+    let pendingOfferAfterLogin = false;
     const authHeading = document.getElementById('auth-heading');
     const authSubmit = document.querySelector('#login-form [type="submit"]');
     const authPin = document.getElementById('login-pin');
@@ -406,6 +466,29 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
         ? 'Create an account with your mobile number and a 4-digit MPIN. You can log in after registration.'
         : 'Enter the mobile number and 4-digit MPIN you used to register.';
     }
+
+    function showAuthScreen(mode, offerAfterLogin = false) {
+      pendingOfferAfterLogin = offerAfterLogin;
+      setAuthMode(mode);
+      document.getElementById('welcome-screen').hidden = true;
+      document.getElementById('splash-screen').hidden = false;
+    }
+
+    document.getElementById('welcome-find').addEventListener('click', () => {
+      showAuthScreen('register');
+    });
+    document.getElementById('welcome-offer').addEventListener('click', () => {
+      showAuthScreen('register', true);
+    });
+    document.getElementById('welcome-login').addEventListener('click', (event) => {
+      event.preventDefault();
+      showAuthScreen('login');
+    });
+    document.getElementById('auth-back').addEventListener('click', () => {
+      pendingOfferAfterLogin = false;
+      document.getElementById('splash-screen').hidden = true;
+      document.getElementById('welcome-screen').hidden = false;
+    });
 
     document.getElementById('register-mode').addEventListener('click', () => setAuthMode('register'));
     document.getElementById('login-mode').addEventListener('click', () => setAuthMode('login'));
@@ -452,11 +535,18 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
           body: JSON.stringify({ id: currentUserId, full_name: name, phone })
         });
         await loadRides();
+        try {
+          await loadBookings();
+        } catch (error) {
+          showToast(`Could not load bookings and reviews: ${error.message}`);
+        }
         updateProfileDisplay();
+        document.getElementById('welcome-screen').hidden = true;
         document.getElementById('splash-screen').hidden = true;
         document.getElementById('main-app').hidden = false;
         authPin.value = '';
-        showOfferScreen(false);
+        showOfferScreen(pendingOfferAfterLogin);
+        pendingOfferAfterLogin = false;
       } catch (error) {
         authNote.textContent = error.message;
         showToast(error.message);
@@ -490,6 +580,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
     function signOut() {
       accessToken = null;
       currentUserId = null;
+      bookings.splice(0, bookings.length);
       pendingRideId = null;
       pendingRideDetails = null;
       authPin.value = '';
@@ -538,30 +629,178 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       document.getElementById('empty').style.display = visible ? 'none' : 'block';
     }
     document.getElementById('bottom-my-rides').addEventListener('click', showMyRides);
-    function showMyBookings() {
-      setBottomTab(document.getElementById('bottom-bookings'));
-      const list = document.getElementById('booking-list');
-      list.replaceChildren();
+    const bookingList = document.getElementById('booking-list');
+    function localDateString(date) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+    async function loadBookings() {
+      const [rows, reviews] = await Promise.all([
+        supabaseRequest(`rest/v1/bookings?select=id,ride_id,seats,status,created_at,ride:rides(id,driver_id,origin,destination,travel_date,departure_time,price_per_seat)&rider_id=eq.${encodeURIComponent(currentUserId)}&status=in.(confirmed,completed)&order=created_at.desc`),
+        supabaseRequest(`rest/v1/driver_reviews?select=id,ride_id,rating,feedback&rider_id=eq.${encodeURIComponent(currentUserId)}`)
+      ]);
+      const reviewByRide = new Map(reviews.map((review) => [review.ride_id, review]));
+      const loadedBookings = rows.flatMap((row) => {
+        const ride = Array.isArray(row.ride) ? row.ride[0] : row.ride;
+        if (!ride) return [];
+        const review = reviewByRide.get(ride.id);
+        const card = cards.find((rideCard) => rideCard.dataset.rideId === ride.id) || null;
+        return [{
+          id: row.id,
+          rideId: ride.id,
+          driverId: ride.driver_id,
+          status: row.status,
+          travelDate: ride.travel_date,
+          card,
+          route: `${ride.origin} → ${ride.destination}`,
+          time: ride.departure_time,
+          price: `₹${ride.price_per_seat}`,
+          reviewId: review?.id || null,
+          rating: review?.rating || null,
+          feedback: review?.feedback || ''
+        }];
+      });
+      bookings.splice(0, bookings.length, ...loadedBookings);
+      cards.forEach((card) => {
+        const booking = bookings.find((item) => item.rideId === card.dataset.rideId);
+        const button = card.querySelector('.ride-owner-button');
+        if (!button || button.disabled) return;
+        button.textContent = booking ? 'Booked' : 'Book seat';
+        const bookingIsPast = booking && booking.travelDate < localDateString(new Date());
+        button.disabled = Boolean(bookingIsPast || booking?.status === 'completed');
+        if (booking) {
+          button.setAttribute('aria-pressed', 'true');
+        } else {
+          button.removeAttribute('aria-pressed');
+        }
+      });
+      renderBookingList();
+    }
+    function renderBookingList() {
+      bookingList.replaceChildren();
       if (!bookings.length) {
         const emptyMessage = document.createElement('div');
         emptyMessage.className = 'booking-empty';
         emptyMessage.textContent = 'You haven\'t booked a seat yet.';
-        list.append(emptyMessage);
+        bookingList.append(emptyMessage);
       } else {
-        bookings.forEach((booking) => {
+        bookings.forEach((booking, index) => {
           const item = document.createElement('div');
           item.className = 'booking-item';
           const route = document.createElement('strong');
           route.textContent = booking.route;
           const details = document.createElement('span');
           details.textContent = `${booking.time} · ${booking.price}`;
-          item.append(route, details);
-          list.append(item);
+          const reviewSummary = document.createElement('p');
+          reviewSummary.className = 'booking-review-summary';
+          if (booking.feedback) {
+            const summaryLabel = document.createElement('strong');
+            summaryLabel.textContent = 'Review: ';
+            const stars = '★'.repeat(booking.rating || 0);
+            const ratingText = booking.rating ? ` (${booking.rating}/5)` : '';
+            reviewSummary.append(summaryLabel);
+            reviewSummary.append(document.createTextNode(`${stars}${ratingText} · ${booking.feedback}`));
+          } else {
+            reviewSummary.textContent = 'No review yet.';
+          }
+          const reviewToggle = document.createElement('button');
+          reviewToggle.className = 'booking-review-toggle';
+          reviewToggle.type = 'button';
+          reviewToggle.dataset.bookingIndex = String(index);
+          reviewToggle.dataset.hasReview = booking.feedback ? 'true' : 'false';
+          const reviewEligible = booking.status === 'completed' ||
+            (booking.travelDate && booking.travelDate < localDateString(new Date()));
+          reviewToggle.textContent = reviewEligible
+            ? (booking.feedback ? 'Edit review' : 'Add review')
+            : 'Review after ride';
+          reviewToggle.disabled = !reviewEligible;
+
+          const reviewForm = document.createElement('form');
+          reviewForm.className = 'booking-review-form';
+          reviewForm.dataset.bookingIndex = String(index);
+          reviewForm.hidden = true;
+          reviewForm.innerHTML = '<label>Rating<select name="rating" required><option value="">Select rating</option><option value="5">5 ★★★★★</option><option value="4">4 ★★★★☆</option><option value="3">3 ★★★☆☆</option><option value="2">2 ★★☆☆☆</option><option value="1">1 ★☆☆☆☆</option></select></label><label>Feedback<textarea name="feedback" maxlength="180" placeholder="Share your ride experience" required></textarea></label><button type="submit" class="booking-review-submit">Save review</button>';
+          const ratingInput = reviewForm.querySelector('select[name="rating"]');
+          const feedbackInput = reviewForm.querySelector('textarea[name="feedback"]');
+          if (ratingInput) ratingInput.value = booking.rating ? String(booking.rating) : '';
+          if (feedbackInput) feedbackInput.value = booking.feedback || '';
+          if (!reviewEligible) {
+            const availabilityNote = document.createElement('span');
+            availabilityNote.className = 'booking-review-availability';
+            availabilityNote.textContent = 'You can leave feedback after the travel date.';
+            item.append(route, details, reviewSummary, reviewToggle, availabilityNote, reviewForm);
+          } else {
+            item.append(route, details, reviewSummary, reviewToggle, reviewForm);
+          }
+          bookingList.append(item);
         });
       }
+    }
+    async function showMyBookings() {
+      setBottomTab(document.getElementById('bottom-bookings'));
       document.getElementById('bookings-dialog').showModal();
+      bookingList.replaceChildren();
+      const loadingMessage = document.createElement('div');
+      loadingMessage.className = 'booking-empty';
+      loadingMessage.textContent = 'Loading your bookings…';
+      bookingList.append(loadingMessage);
+      try {
+        await loadBookings();
+      } catch (error) {
+        bookingList.replaceChildren();
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'booking-empty';
+        errorMessage.textContent = error.message;
+        bookingList.append(errorMessage);
+      }
     }
     document.getElementById('bottom-bookings').addEventListener('click', showMyBookings);
+    bookingList.addEventListener('click', (event) => {
+      const toggle = event.target.closest('.booking-review-toggle');
+      if (!toggle) return;
+      const parent = toggle.closest('.booking-item');
+      const form = parent ? parent.querySelector('.booking-review-form') : null;
+      if (!form) return;
+      form.hidden = !form.hidden;
+      if (form.hidden) {
+        toggle.textContent = toggle.dataset.hasReview === 'true' ? 'Edit review' : 'Add review';
+      } else {
+        toggle.textContent = 'Cancel';
+      }
+    });
+    bookingList.addEventListener('submit', async (event) => {
+      const reviewForm = event.target.closest('.booking-review-form');
+      if (!reviewForm) return;
+      event.preventDefault();
+      const bookingIndex = Number(reviewForm.dataset.bookingIndex);
+      if (!Number.isInteger(bookingIndex) || bookingIndex < 0 || bookingIndex >= bookings.length) return;
+      const rating = Number(reviewForm.querySelector('select[name="rating"]').value);
+      const feedback = reviewForm.querySelector('textarea[name="feedback"]').value.trim();
+      if (!rating || !feedback) return;
+      const booking = bookings[bookingIndex];
+      const payload = {
+        ride_id: booking.rideId,
+        driver_id: booking.driverId,
+        rider_id: currentUserId,
+        rating,
+        feedback
+      };
+      const path = booking.reviewId
+        ? `rest/v1/driver_reviews?id=eq.${encodeURIComponent(booking.reviewId)}&rider_id=eq.${encodeURIComponent(currentUserId)}`
+        : 'rest/v1/driver_reviews';
+      reviewForm.querySelector('.booking-review-submit').disabled = true;
+      try {
+        await supabaseRequest(path, {
+          method: booking.reviewId ? 'PATCH' : 'POST',
+          headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify(payload)
+        });
+        await loadBookings();
+        showToast('Thanks! Your review has been saved.');
+      } catch (error) {
+        showToast(error.message);
+        reviewForm.querySelector('.booking-review-submit').disabled = false;
+      }
+    });
 
     const carCapacity = document.getElementById('offer-car-seats');
     const passengerSeats = document.getElementById('offer-seats');
@@ -681,23 +920,39 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       }
     });
 
-    rideList.addEventListener('click', (event) => {
+    rideList.addEventListener('click', async (event) => {
       const button = event.target.closest('.book-btn');
-      if (!button) return;
+      if (!button || button.disabled) return;
       const card = button.closest('.ride-card');
-      const existingIndex = bookings.findIndex((booking) => booking.card === card);
-      if (existingIndex >= 0) {
-        bookings.splice(existingIndex, 1);
-        button.textContent = 'Book seat';
-        button.removeAttribute('aria-pressed');
-        showToast('Booking removed.');
+      const rideId = card?.dataset.rideId;
+      if (!rideId || !accessToken || !currentUserId) {
+        showToast('Please log in to book a seat.');
         return;
       }
-      const places = [...card.querySelectorAll('.place')].map((place) => place.textContent.trim());
-      const time = card.querySelector('.times span')?.textContent.trim() || 'Departure time unavailable';
-      const price = card.querySelector('.price')?.textContent.trim() || 'Price unavailable';
-      bookings.push({ card, route: places.join(' → '), time, price });
-      button.textContent = 'Booked';
-      button.setAttribute('aria-pressed', 'true');
-      showToast('Seat booked — find it under My bookings.');
+      const existingBooking = bookings.find((booking) => booking.rideId === rideId);
+      button.disabled = true;
+      try {
+        if (existingBooking) {
+          await supabaseRequest(
+            `rest/v1/bookings?id=eq.${encodeURIComponent(existingBooking.id)}&rider_id=eq.${encodeURIComponent(currentUserId)}`,
+            {
+              method: 'PATCH',
+              headers: { Prefer: 'return=minimal' },
+              body: JSON.stringify({ status: 'cancelled' })
+            }
+          );
+        } else {
+          await supabaseRequest('rest/v1/bookings', {
+            method: 'POST',
+            headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify({ ride_id: rideId, rider_id: currentUserId, seats: 1 })
+          });
+        }
+        await loadRides();
+        await loadBookings();
+        showToast(existingBooking ? 'Booking cancelled.' : 'Seat booked — find it under My bookings.');
+      } catch (error) {
+        showToast(error.message);
+        if (button.isConnected) button.disabled = false;
+      }
     });

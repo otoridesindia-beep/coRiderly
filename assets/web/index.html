@@ -7,9 +7,53 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <section class="intro-splash" id="intro-splash" aria-label="CoRiderly">
-    <div class="intro-brand"><span class="intro-mark" aria-hidden="true"><img src="logo_small.png" alt=""></span><span>CoRiderly</span></div>
-    <div class="car-journey" aria-hidden="true"><svg class="journey-car-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16h14l-1.2-6a2 2 0 0 0-2-1.6H8.2A2 2 0 0 0 6.3 10L5 16Z"/><path d="M7 16v2m10-2v2M7 13h.01M17 13h.01"/></svg></div>
+  <section class="welcome-screen" id="welcome-screen" aria-label="Welcome to CoRiderly">
+    <header class="welcome-top-bar">
+      <div class="welcome-badge">
+        <span class="welcome-badge-dot" aria-hidden="true"></span>
+        <span>Community carpooling</span>
+      </div>
+    </header>
+
+    <section class="welcome-brand-section" aria-label="CoRiderly brand">
+      <div class="welcome-brand-wrap">
+        <div class="welcome-brand-card">
+          <img class="welcome-logo" src="logo.png" alt="CoRiderly" />
+          <p class="welcome-brand-tagline">Shared rides, simpler journeys</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="welcome-onboarding">
+      <div class="welcome-intro-copy">
+        <span class="welcome-eyebrow">CORIDERLY</span>
+        <h1>Better journeys,<br />together.</h1>
+        <p>Find a seat. Share your drive.</p>
+      </div>
+
+      <div class="welcome-journey-card" aria-label="Share the journey, make the miles count.">
+        <div class="welcome-journey-line" aria-hidden="true">
+          <span class="welcome-origin-node"></span>
+          <span class="welcome-route-dashes"></span>
+          <span class="welcome-destination-node"></span>
+        </div>
+        <div class="welcome-journey-caption">
+          <span>Share the journey, make the miles count.</span>
+          <span class="welcome-journey-note">Good company awaits</span>
+        </div>
+      </div>
+
+      <div class="welcome-actions">
+        <button class="welcome-button welcome-button-primary" id="welcome-find" type="button">
+          <span>Find a Ride</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+            <path d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+        <button class="welcome-button welcome-button-secondary" id="welcome-offer" type="button">Offer a Ride</button>
+        <p class="welcome-login-prompt">Already have an account? <a href="#login" id="welcome-login">Log in</a></p>
+      </div>
+    </section>
   </section>
   <section class="splash-screen" id="splash-screen" aria-label="CoRiderly sign in" hidden>
     <div class="splash-story">
@@ -31,6 +75,7 @@
     </div>
     <div class="login-side">
       <form class="login-card" id="login-form">
+        <button class="auth-back-link" id="auth-back" type="button">← Back</button>
         <h2 id="auth-heading">Welcome aboard</h2>
         <p class="login-intro">Use your mobile number and a 4-digit MPIN to continue.</p>
         <div class="role-options" aria-label="Account options">
@@ -216,7 +261,15 @@
   <dialog id="bookings-dialog" aria-labelledby="bookings-dialog-title">
     <div class="dialog-content">
       <div class="dialog-heading"><h2 id="bookings-dialog-title">My bookings</h2><button class="dialog-close" type="button" data-close-dialog="bookings-dialog" aria-label="Close">×</button></div>
+      <p class="booking-caption">Manage your bookings and add a quick review after your ride.</p>
       <div class="booking-list" id="booking-list"><div class="booking-empty">You haven't booked a seat yet.</div></div>
+    </div>
+  </dialog>
+  <dialog id="driver-reviews-dialog" aria-labelledby="driver-reviews-title">
+    <div class="dialog-content">
+      <div class="dialog-heading"><h2 id="driver-reviews-title">Rider feedback</h2><button class="dialog-close" type="button" data-close-dialog="driver-reviews-dialog" aria-label="Close">×</button></div>
+      <div class="driver-reviews-summary" id="driver-reviews-summary"></div>
+      <div class="driver-reviews-list" id="driver-reviews-list" aria-live="polite"></div>
     </div>
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
