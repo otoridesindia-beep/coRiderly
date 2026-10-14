@@ -829,6 +829,9 @@
       box-shadow: var(--shadow);
     }
     .profile-summary { border-bottom-color: var(--line); }
+    .app-address { max-width: 1120px; margin: 24px auto 0; padding: 18px 20px 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; line-height: 1.6; text-align: center; }
+    .app-address strong { display: block; margin-bottom: 4px; color: var(--ink, inherit); }
+    .app-address address { font-style: normal; }
     .profile-menu button { color: var(--ink); }
     .profile-menu button:hover { color: #ffd47d; background: rgba(245, 166, 35, .1); }
     .profile-menu .logout-action { border-top-color: var(--line); color: #ff9696; }
