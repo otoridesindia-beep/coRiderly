@@ -1063,3 +1063,27 @@
     .theme-toggle:hover { border-color: var(--purple); }
     .theme-toggle::before { content: "\1F319"; }
     html[data-theme="dark"] .theme-toggle::before { content: "\2600\FE0F"; }
+
+    html[data-theme="light"] .welcome-screen {
+      border-color: var(--line);
+      color: var(--ink);
+      background: #faf9fc;
+      box-shadow: 0 18px 48px rgba(40, 29, 78, .12);
+    }
+    html[data-theme="light"] .welcome-badge { border-color: var(--line); color: var(--muted); background: #fff; }
+    html[data-theme="light"] .welcome-brand-card {
+      border-color: var(--line);
+      background: linear-gradient(135deg, #f3edff, #ece4ff 55%, #e4d9fb);
+      box-shadow: 0 20px 50px -10px rgba(109, 40, 217, .18);
+    }
+    html[data-theme="light"] .welcome-brand-wrap::before { opacity: .15; }
+    html[data-theme="light"] .welcome-brand-tagline { color: var(--muted); }
+    html[data-theme="light"] .welcome-intro-copy p,
+    html[data-theme="light"] .welcome-login-prompt,
+    html[data-theme="light"] .welcome-journey-caption { color: var(--muted); }
+    html[data-theme="light"] .welcome-journey-card { border-color: var(--line); background: #fff; }
+    html[data-theme="light"] .welcome-destination-node { background: var(--purple); box-shadow: 0 0 0 4px rgba(124, 58, 237, .18); }
+    html[data-theme="light"] .welcome-route-dashes { border-top-color: #c9bdf0; }
+    html[data-theme="light"] .welcome-button-secondary { border-color: var(--line); color: var(--ink); background: #fff; }
+    html[data-theme="light"] .welcome-button-secondary:hover { background: var(--purple-soft); }
+    html[data-theme="light"] .welcome-login-prompt a { color: var(--purple-dark); }
