@@ -82,7 +82,6 @@ class _RidePageState extends State<RidePage> {
             const paymentAppSchemes = {
               'upi',
               'intent',
-              'phonepe',
               'paytmmp',
               'tez',
               'gpay',
@@ -1497,7 +1496,7 @@ class _OfferRidePageState extends State<OfferRidePage> {
                 child: Padding(
                   padding: EdgeInsets.all(14),
                   child: Text(
-                    '₹39 fee per successful ride. Payment is due only after the ride is completed. This demo keeps ride details in memory only.',
+                    '₹39 Pine Labs payment is required to publish each ride. This demo keeps ride details in memory only.',
                   ),
                 ),
               ),

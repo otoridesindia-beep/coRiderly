@@ -8,29 +8,20 @@ const corsHeaders = {
 };
 
 const PAYMENT_AMOUNT_PAISE = 3900;
-const PROVIDER = "phonepe";
-const DEFAULT_REDIRECT_URL = "https://otoridesindia-beep.github.io/coRiderly/";
-
-const PHONEPE_ENDPOINTS = {
-  sandbox: {
-    token: "https://api-preprod.phonepe.com/apis/pg-sandbox/v1/oauth/token",
-    api: "https://api-preprod.phonepe.com/apis/pg-sandbox/checkout/v2",
-  },
-  production: {
-    token: "https://api.phonepe.com/apis/identity-manager/v1/oauth/token",
-    api: "https://api.phonepe.com/apis/pg/checkout/v2",
-  },
+const PROVIDER = "pinelabs";
+const DEFAULT_CALLBACK_URL = "https://otoridesindia-beep.github.io/coRiderly/";
+const PINELABS_ENDPOINTS = {
+  uat: "https://pluraluat.v2.pinepg.in",
+  production: "https://api.pluralpay.in",
 };
 
-type PhonePeConfig = {
+type PineLabsConfig = {
+  merchantId: string;
   clientId: string;
-  clientVersion: string;
   clientSecret: string;
-  redirectUrl: string;
-  endpoints: typeof PHONEPE_ENDPOINTS.sandbox;
+  callbackUrl: string;
+  apiBaseUrl: string;
 };
-
-let cachedToken: { value: string; expiresAt: number } | null = null;
 
 type RideDetails = {
   origin: string;
@@ -45,6 +36,15 @@ type RideDetails = {
   bags: number;
   price_per_seat: number;
 };
+
+type PineLabsStatus = {
+  state: string;
+  amount: number | null;
+  transactionId: string | null;
+  merchantId: string | null;
+};
+
+let cachedToken: { value: string; expiresAt: number } | null = null;
 
 function respond(status: number, body: Record<string, unknown>): Response {
   return new Response(JSON.stringify(body), { status, headers: corsHeaders });
@@ -107,74 +107,82 @@ function readRide(value: unknown): RideDetails | null {
   };
 }
 
-function readPhonePeConfig(): PhonePeConfig | null {
-  const clientId = Deno.env.get("PHONEPE_CLIENT_ID");
-  const clientVersion = Deno.env.get("PHONEPE_CLIENT_VERSION");
-  const clientSecret = Deno.env.get("PHONEPE_CLIENT_SECRET");
-  if (!clientId || !clientVersion || !clientSecret) return null;
-  const environment = Deno.env.get("PHONEPE_ENV") === "production"
+function readPineLabsConfig(): PineLabsConfig | null {
+  const merchantId = Deno.env.get("PINELABS_MID");
+  const clientId = Deno.env.get("PINELABS_CLIENT_ID");
+  const clientSecret = Deno.env.get("PINELABS_CLIENT_SECRET");
+  if (!merchantId || !clientId || !clientSecret) return null;
+  const environment = Deno.env.get("PINELABS_ENV") === "production"
     ? "production"
-    : "sandbox";
+    : "uat";
   return {
+    merchantId,
     clientId,
-    clientVersion,
     clientSecret,
-    redirectUrl: Deno.env.get("PHONEPE_REDIRECT_URL") || DEFAULT_REDIRECT_URL,
-    endpoints: PHONEPE_ENDPOINTS[environment],
+    callbackUrl: Deno.env.get("PINELABS_CALLBACK_URL") || DEFAULT_CALLBACK_URL,
+    apiBaseUrl: PINELABS_ENDPOINTS[environment],
   };
 }
 
-async function getPhonePeToken(config: PhonePeConfig): Promise<string> {
+function requestHeaders(): Record<string, string> {
+  return {
+    "Content-Type": "application/json",
+    "Request-ID": crypto.randomUUID(),
+    "Request-Timestamp": new Date().toISOString(),
+  };
+}
+
+async function getPineLabsToken(config: PineLabsConfig): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   if (cachedToken && cachedToken.expiresAt - 60 > now) return cachedToken.value;
 
-  const response = await fetch(config.endpoints.token, {
+  const response = await fetch(`${config.apiBaseUrl}/api/auth/v1/token`, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
+    headers: requestHeaders(),
+    body: JSON.stringify({
       client_id: config.clientId,
-      client_version: config.clientVersion,
       client_secret: config.clientSecret,
       grant_type: "client_credentials",
     }),
   });
   const result: unknown = await response.json().catch(() => null);
   if (!response.ok || !isRecord(result) || typeof result.access_token !== "string") {
-    console.error("PhonePe token request failed:", { status: response.status });
+    console.error("Pine Labs token request failed:", { status: response.status });
     throw new Error(
       `Payment provider authorization failed (HTTP ${response.status}).`,
     );
   }
+  const parsedExpiry = typeof result.expires_at === "string"
+    ? Math.floor(Date.parse(result.expires_at) / 1000)
+    : Number.NaN;
   cachedToken = {
     value: result.access_token,
-    expiresAt: typeof result.expires_at === "number"
-      ? result.expires_at
-      : now + 300,
+    expiresAt: Number.isFinite(parsedExpiry) ? parsedExpiry : now + 300,
   };
   return cachedToken.value;
 }
 
-async function phonePeRequest(
-  config: PhonePeConfig,
+async function pineLabsRequest(
+  config: PineLabsConfig,
   path: string,
   method: "GET" | "POST",
   body?: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
-  const token = await getPhonePeToken(config);
-  const response = await fetch(`${config.endpoints.api}${path}`, {
+  const token = await getPineLabsToken(config);
+  const response = await fetch(`${config.apiBaseUrl}${path}`, {
     method,
     headers: {
-      Authorization: `O-Bearer ${token}`,
-      "Content-Type": "application/json",
+      ...requestHeaders(),
+      Authorization: `Bearer ${token}`,
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
   const result: unknown = await response.json().catch(() => null);
   if (!response.ok || !isRecord(result)) {
-    const code = isRecord(result) && typeof result.code === "string"
-      ? result.code
+    const code = isRecord(result) && typeof result.response_code === "number"
+      ? String(result.response_code)
       : "unknown";
-    console.error("PhonePe API request failed:", { status: response.status, code });
+    console.error("Pine Labs API request failed:", { status: response.status, code });
     throw new Error(
       `Payment provider request failed (HTTP ${response.status}, ${code}).`,
     );
@@ -182,59 +190,75 @@ async function phonePeRequest(
   return result;
 }
 
-type PhonePeOrder = { orderId: string; redirectUrl: string };
-
-async function createPhonePeOrder(
-  config: PhonePeConfig,
-  merchantOrderId: string,
+async function createPineLabsOrder(
+  config: PineLabsConfig,
+  merchantOrderReference: string,
   userId: string,
-): Promise<PhonePeOrder> {
-  const result = await phonePeRequest(config, "/pay", "POST", {
-    merchantOrderId,
-    amount: PAYMENT_AMOUNT_PAISE,
-    expireAfter: 1200,
-    metaInfo: { udf1: userId },
-    paymentFlow: {
-      type: "PG_CHECKOUT",
-      message: "CoRiderly ride publishing fee",
-      merchantUrls: { redirectUrl: config.redirectUrl },
+  phone: string,
+): Promise<{ orderId: string; redirectUrl: string }> {
+  const result = await pineLabsRequest(config, "/api/checkout/v1/orders", "POST", {
+    merchant_order_reference: merchantOrderReference,
+    order_amount: { value: PAYMENT_AMOUNT_PAISE, currency: "INR" },
+    integration_mode: "IFRAME",
+    notes: "CoRiderly ride publishing fee",
+    callback_url: config.callbackUrl,
+    failure_callback_url: config.callbackUrl,
+    purchase_details: {
+      customer: {
+        customer_id: userId.slice(0, 19),
+        mobile_number: phone,
+        country_code: "91",
+      },
     },
   });
-  if (typeof result.orderId !== "string" ||
-    typeof result.redirectUrl !== "string" || !result.redirectUrl) {
+  const response = isRecord(result.data) ? result.data : result;
+  const orderId = typeof response.order_id === "string"
+    ? response.order_id
+    : null;
+  const redirectUrl = typeof response.redirect_url === "string"
+    ? response.redirect_url
+    : null;
+  if (!orderId || !redirectUrl || !redirectUrl.startsWith("https://")) {
     throw new Error("Payment provider did not return a usable order.");
   }
-  return { orderId: result.orderId, redirectUrl: result.redirectUrl };
+  return { orderId, redirectUrl };
 }
 
-type PhonePeStatus = {
-  state: string;
-  amount: number | null;
-  transactionId: string | null;
-};
-
-async function getPhonePeStatus(
-  config: PhonePeConfig,
-  merchantOrderId: string,
-): Promise<PhonePeStatus> {
-  const result = await phonePeRequest(
+async function getPineLabsStatus(
+  config: PineLabsConfig,
+  orderId: string,
+): Promise<PineLabsStatus> {
+  const response = await pineLabsRequest(
     config,
-    `/order/${encodeURIComponent(merchantOrderId)}/status?details=false`,
+    `/api/pay/v1/orders/${encodeURIComponent(orderId)}`,
     "GET",
   );
-  const attempts = Array.isArray(result.paymentDetails)
-    ? result.paymentDetails.filter(isRecord)
-    : [];
-  const completed = attempts.find((attempt) => attempt.state === "COMPLETED");
-  const transactionId = completed && typeof completed.transactionId === "string"
-    ? completed.transactionId
-    : typeof result.orderId === "string"
-    ? result.orderId
+  const result = isRecord(response.data) ? response.data : response;
+  const payment = Array.isArray(result.payments)
+    ? result.payments.filter(isRecord).find((item) => item.status === "PROCESSED")
+    : undefined;
+  const orderAmount = isRecord(result.order_amount) &&
+      typeof result.order_amount.value === "number" &&
+      result.order_amount.currency === "INR"
+    ? result.order_amount.value
+    : null;
+  const paymentAmount = payment && isRecord(payment.payment_amount) &&
+      typeof payment.payment_amount.value === "number" &&
+      payment.payment_amount.currency === "INR"
+    ? payment.payment_amount.value
     : null;
   return {
-    state: typeof result.state === "string" ? result.state : "UNKNOWN",
-    amount: typeof result.amount === "number" ? result.amount : null,
-    transactionId,
+    state: typeof result.status === "string" ? result.status : "UNKNOWN",
+    amount: orderAmount === PAYMENT_AMOUNT_PAISE &&
+        paymentAmount === PAYMENT_AMOUNT_PAISE
+      ? PAYMENT_AMOUNT_PAISE
+      : null,
+    transactionId: payment && typeof payment.id === "string"
+      ? payment.id
+      : null,
+    merchantId: typeof result.merchant_id === "string"
+      ? result.merchant_id
+      : null,
   };
 }
 
@@ -242,7 +266,7 @@ async function publishPaidRide(
   admin: ReturnType<typeof createClient>,
   rideId: string,
   userId: string,
-  merchantOrderId: string,
+  orderId: string,
   transactionId: string,
 ) {
   const { data: publishedRideId, error: publishError } = await admin.rpc(
@@ -250,7 +274,7 @@ async function publishPaidRide(
     {
       p_ride_id: rideId,
       p_driver_id: userId,
-      p_provider_order_id: merchantOrderId,
+      p_provider_order_id: orderId,
       p_provider_payment_id: transactionId,
     },
   );
@@ -285,7 +309,7 @@ Deno.serve(async (request: Request) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const config = readPhonePeConfig();
+  const config = readPineLabsConfig();
   if (!supabaseUrl || !serviceRoleKey || !config) {
     console.error("Ride payment function is missing required secrets.");
     return respond(503, { message: "Payments are not configured yet." });
@@ -337,14 +361,17 @@ Deno.serve(async (request: Request) => {
         }
         if (existing.provider !== PROVIDER) {
           return respond(409, {
-            message: "This pending ride uses a different payment provider. Retry to create a new PhonePe order.",
+            message: "This pending ride uses a different payment provider. Retry to create a new Pine Labs order.",
           });
         }
         const previousOrderId = String(existing.provider_order_id);
-        const previous = await getPhonePeStatus(config, previousOrderId)
-          .catch(() => null);
-        if (previous?.state === "COMPLETED" &&
-          previous.amount === PAYMENT_AMOUNT_PAISE && previous.transactionId) {
+        const previous = await getPineLabsStatus(config, previousOrderId);
+        if (
+          previous?.state === "PROCESSED" &&
+          previous.amount === PAYMENT_AMOUNT_PAISE &&
+          previous.merchantId === config.merchantId &&
+          previous.transactionId
+        ) {
           await publishPaidRide(
             admin,
             String(existing.ride_id),
@@ -354,21 +381,24 @@ Deno.serve(async (request: Request) => {
           );
           return respond(200, { already_paid: true, ride_id: existing.ride_id });
         }
-        const resumedOrderId = `cr_${crypto.randomUUID().replaceAll("-", "")}`;
-        const resumedOrder = await createPhonePeOrder(
+        const resumedOrderReference = `cr_${crypto.randomUUID().replaceAll("-", "")}`;
+        const phone = readPhone(payload.phone);
+        if (!phone) return respond(400, { message: "Enter a valid 10-digit Indian mobile number." });
+        const resumedOrder = await createPineLabsOrder(
           config,
-          resumedOrderId,
+          resumedOrderReference,
           userData.user.id,
+          phone,
         );
         const { error: resumeError } = await admin
           .from("ride_payments")
-          .update({ provider_order_id: resumedOrderId })
+          .update({ provider_order_id: resumedOrder.orderId })
           .eq("ride_id", existing.ride_id)
           .eq("payer_id", userData.user.id)
           .eq("status", "created");
         if (resumeError) throw new Error("Could not resume the ride payment. Start a new ride offer.");
         return respond(200, {
-          merchant_order_id: resumedOrderId,
+          provider_order_id: resumedOrder.orderId,
           redirect_url: resumedOrder.redirectUrl,
           ride_id: existing.ride_id,
           amount: PAYMENT_AMOUNT_PAISE,
@@ -381,8 +411,13 @@ Deno.serve(async (request: Request) => {
       const phone = readPhone(payload.phone);
       if (!phone) return respond(400, { message: "Enter a valid 10-digit Indian mobile number." });
 
-      const merchantOrderId = `cr_${crypto.randomUUID().replaceAll("-", "")}`;
-      const order = await createPhonePeOrder(config, merchantOrderId, userData.user.id);
+      const merchantOrderReference = `cr_${crypto.randomUUID().replaceAll("-", "")}`;
+      const order = await createPineLabsOrder(
+        config,
+        merchantOrderReference,
+        userData.user.id,
+        phone,
+      );
 
       const { data: rideId, error } = await admin.rpc("create_pending_paid_ride", {
         p_driver_id: userData.user.id,
@@ -397,14 +432,14 @@ Deno.serve(async (request: Request) => {
         p_available_seats: ride.available_seats,
         p_bags: ride.bags,
         p_price_per_seat: ride.price_per_seat,
-        p_provider_order_id: merchantOrderId,
+        p_provider_order_id: order.orderId,
       });
       if (error || typeof rideId !== "string") {
         console.error("Could not create paid ride draft:", error?.message);
         throw new Error("Could not prepare the ride payment. Please try again.");
       }
       return respond(200, {
-        merchant_order_id: merchantOrderId,
+        provider_order_id: order.orderId,
         redirect_url: order.redirectUrl,
         ride_id: rideId,
         amount: PAYMENT_AMOUNT_PAISE,
@@ -413,7 +448,7 @@ Deno.serve(async (request: Request) => {
     }
 
     if (payload.action === "verify_payment") {
-      const { ride_id: rideId, merchant_order_id: orderId } = payload;
+      const { ride_id: rideId, provider_order_id: orderId } = payload;
       if (typeof rideId !== "string" || typeof orderId !== "string") {
         return respond(400, { message: "Payment confirmation is incomplete." });
       }
@@ -430,11 +465,14 @@ Deno.serve(async (request: Request) => {
         return respond(403, { message: "This payment does not match your ride." });
       }
 
-      const status = await getPhonePeStatus(config, orderId);
+      const status = await getPineLabsStatus(config, orderId);
+      if (status.merchantId !== config.merchantId) {
+        return respond(403, { message: "This payment does not belong to this merchant." });
+      }
       if (status.amount !== PAYMENT_AMOUNT_PAISE) {
         return respond(400, { message: "Payment details do not match this ride fee." });
       }
-      if (status.state !== "COMPLETED" || !status.transactionId) {
+      if (status.state !== "PROCESSED" || !status.transactionId) {
         return respond(402, { message: "Payment has not been completed. The ride is not published." });
       }
 

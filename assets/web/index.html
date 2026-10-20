@@ -210,7 +210,7 @@
             </div>
             <div class="fee-note">
               <span class="fee-icon" aria-hidden="true">₹</span>
-              <div><strong>₹39 payment per ride</strong>Pay securely through PhonePe before publishing. Each payment publishes one ride after verification.<small class="payment-note">Your ride appears to others only after payment is confirmed.</small></div>
+              <div><strong>₹39 payment per ride</strong>Pay securely through Pine Labs before publishing. Each payment publishes one ride after verification.<small class="payment-note">Your ride appears to others only after payment is confirmed.</small></div>
             </div>
             <button class="search-btn offer-submit" type="submit">Pay ₹39 &amp; publish ride</button>
             <div class="offer-success" id="offer-success" role="status">Payment confirmed. Your ride has been published.</div>
@@ -289,6 +289,14 @@
       <div class="dialog-heading"><h2 id="driver-reviews-title">Rider feedback</h2><button class="dialog-close" type="button" data-close-dialog="driver-reviews-dialog" aria-label="Close">×</button></div>
       <div class="driver-reviews-summary" id="driver-reviews-summary"></div>
       <div class="driver-reviews-list" id="driver-reviews-list" aria-live="polite"></div>
+    </div>
+  </dialog>
+  <dialog id="payment-dialog" aria-labelledby="payment-dialog-title">
+    <div class="dialog-content">
+      <div class="dialog-heading"><h2 id="payment-dialog-title">Complete payment</h2><button class="dialog-close" type="button" data-close-dialog="payment-dialog" aria-label="Close">×</button></div>
+      <iframe id="payment-frame" title="Pine Labs secure checkout" referrerpolicy="no-referrer"></iframe>
+      <p class="payment-dialog-note">After paying, select “Verify payment” to confirm your ride. Closing this window will not publish it.</p>
+      <button class="search-btn dialog-submit" id="verify-payment-button" type="button">Verify payment</button>
     </div>
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>

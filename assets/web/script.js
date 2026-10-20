@@ -33,7 +33,9 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
     let currentUserId = null;
     let pendingRideId = null;
     let pendingRideDetails = null;
-    let phonePeCheckoutPromise = null;
+    const paymentDialog = document.getElementById('payment-dialog');
+    const paymentFrame = document.getElementById('payment-frame');
+    const verifyPaymentButton = document.getElementById('verify-payment-button');
 
     function updateProfileDisplay() {
       const initials = profileData.name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'AM';
@@ -106,50 +108,60 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       return result;
     }
 
-    function loadPhonePeCheckout() {
-      if (window.PhonePeCheckout) return Promise.resolve();
-      if (phonePeCheckoutPromise) return phonePeCheckoutPromise;
-      phonePeCheckoutPromise = new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://mercury.phonepe.com/web/bundle/checkout.js';
-        script.async = true;
-        script.onload = () => window.PhonePeCheckout
-          ? resolve()
-          : reject(new Error('PhonePe checkout did not load. Check your internet connection.'));
-        script.onerror = () => reject(new Error('Could not load PhonePe checkout. Check your internet connection.'));
-        document.head.append(script);
-      }).catch((error) => {
-        phonePeCheckoutPromise = null;
-        throw error;
-      });
-      return phonePeCheckoutPromise;
-    }
-
     async function openRidePaymentCheckout(order) {
-      // PhonePe reports only whether the user finished or closed checkout;
-      // the server confirms the real payment state before the ride is published.
-      await new Promise((resolve, reject) => {
-        window.PhonePeCheckout.transact({
-          tokenUrl: order.redirect_url,
-          type: 'IFRAME',
-          callback: (response) => {
-            if (response === 'USER_CANCEL') {
-              reject(new Error('Payment cancelled. Your ride has not been published.'));
-            } else {
-              resolve();
-            }
+      paymentFrame.src = order.redirect_url;
+      paymentDialog.showModal();
+
+      return new Promise((resolve, reject) => {
+        let completed = false;
+        let verifying = false;
+        const closeButton = paymentDialog.querySelector('.dialog-close');
+        const onClose = () => {
+          verifyPaymentButton.removeEventListener('click', onVerify);
+          paymentDialog.removeEventListener('cancel', onCancel);
+          paymentFrame.src = 'about:blank';
+          verifyPaymentButton.disabled = false;
+          verifyPaymentButton.textContent = 'Verify payment';
+          closeButton.disabled = false;
+          if (!completed) {
+            reject(new Error('Payment cancelled. Your ride has not been published.'));
           }
-        });
+        };
+        const onCancel = (event) => {
+          if (verifying) event.preventDefault();
+        };
+        const onVerify = async () => {
+          verifying = true;
+          verifyPaymentButton.disabled = true;
+          closeButton.disabled = true;
+          verifyPaymentButton.textContent = 'Verifying payment…';
+          try {
+            const result = await ridePaymentRequest({
+              action: 'verify_payment',
+              ride_id: order.ride_id,
+              provider_order_id: order.provider_order_id
+            });
+            if (!result?.ride) {
+              throw new Error('Payment was verified, but the ride was not returned. Refresh your rides.');
+            }
+            completed = true;
+            verifyPaymentButton.removeEventListener('click', onVerify);
+            paymentFrame.src = 'about:blank';
+            paymentDialog.close();
+            resolve(result.ride);
+          } catch (error) {
+            showToast(error.message);
+            verifying = false;
+            verifyPaymentButton.disabled = false;
+            closeButton.disabled = false;
+            verifyPaymentButton.textContent = 'Verify payment';
+          }
+        };
+
+        paymentDialog.addEventListener('close', onClose, { once: true });
+        paymentDialog.addEventListener('cancel', onCancel);
+        verifyPaymentButton.addEventListener('click', onVerify);
       });
-      const result = await ridePaymentRequest({
-        action: 'verify_payment',
-        ride_id: order.ride_id,
-        merchant_order_id: order.merchant_order_id
-      });
-      if (!result?.ride) {
-        throw new Error('Payment was verified, but the ride was not returned. Refresh your rides.');
-      }
-      return result.ride;
     }
 
     function renderRideCard(ride) {
@@ -858,7 +870,6 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       pendingRideId = order.ride_id;
       pendingRideDetails = ride;
       submitButton.textContent = 'Complete ₹39 payment…';
-      await loadPhonePeCheckout();
       const paymentResult = await openRidePaymentCheckout(order);
       const savedRide = paymentResult;
       pendingRideId = null;

@@ -78,32 +78,33 @@ longer credential for accounts requiring stronger protection.
 
 ## Pay to publish a ride
 
-Each ride requires a separate ₹39 PhonePe payment. The ride stays in
+Each ride requires a separate ₹39 Pine Labs Plural payment. The ride stays in
 `pending_payment` until the authenticated `ride-payment` Edge Function checks
-the order status with PhonePe and confirms the payment is `COMPLETED` for the
-exact fee. The app cannot insert or promote rides directly.
+the order and processed payment with Pine Labs, verifies the merchant and exact
+fee, and publishes the ride. The app cannot insert or promote rides directly.
 
 Apply the migrations in order, ending with
-`supabase/migrations/20261020000100_phonepe_payments.sql`. Configure the
-PhonePe **sandbox** credentials as Supabase Edge Function secrets
-(`PHONEPE_ENV` defaults to `sandbox`; set it to `production` only with live
-credentials):
+`supabase/migrations/20261020000200_pinelabs_payments.sql`. Configure the Pine
+Labs Plural **UAT** credentials as Supabase Edge Function secrets. The MID,
+client ID, and client secret are server-side secrets; never put them in Flutter,
+web assets, or source control:
 
 ```powershell
 supabase secrets set --project-ref ecefjyoaqyxdjyjsmpyd `
-  PHONEPE_CLIENT_ID=<client-id> `
-  PHONEPE_CLIENT_VERSION=<client-version> `
-  PHONEPE_CLIENT_SECRET=<client-secret> `
-  PHONEPE_ENV=sandbox
+  PINELABS_MID=<merchant-id> `
+  PINELABS_CLIENT_ID=<client-id> `
+  PINELABS_CLIENT_SECRET=<client-secret> `
+  PINELABS_ENV=uat `
+  PINELABS_CALLBACK_URL=https://otoridesindia-beep.github.io/coRiderly/
 supabase functions deploy ride-payment --project-ref ecefjyoaqyxdjyjsmpyd
 ```
 
 For local Edge Function development, copy `.env.example` to `.env`, fill in the
-PhonePe credentials and required Supabase function secrets, then run
+Pine Labs credentials and required Supabase function secrets, then run
 `supabase functions serve ride-payment --env-file .env`. `.env` is ignored by
-Git. Never put the PhonePe client secret in the app or commit it. Complete a
-test payment and verify the corresponding `ride_payments` row is `paid` and its
-ride is `open` before configuring live credentials in Supabase.
+Git. Register the callback URL with Pine Labs if required by your merchant
+account. Complete a UAT payment and verify the corresponding `ride_payments`
+row is `paid` and its ride is `open` before configuring live credentials.
 
 ## Ride search and driver documents
 
@@ -147,7 +148,7 @@ records must be written by trusted backend code, not directly by the app.
 Never store an MPIN or raw Aadhaar number in these tables.
 
 The HTML ride screen loads open rides for authenticated users. Ride publication
-uses the `ride-payment` Edge Function and PhonePe Standard Checkout, requiring
+uses the `ride-payment` Edge Function and Pine Labs Plural hosted checkout, requiring
 the server-verified per-ride payment described above. Seat bookings and driver
 reviews use Supabase. Riders can review a driver after the trip date only if
 they have a confirmed or completed booking; reviews are visible to authenticated

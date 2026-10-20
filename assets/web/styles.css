@@ -680,6 +680,10 @@
       box-shadow: none;
     }
     #driver-reviews-dialog { width: min(420px, calc(100% - 40px)); max-height: 78vh; }
+    #payment-dialog { width: min(520px, calc(100% - 32px)); height: min(760px, 90vh); }
+    #payment-dialog .dialog-content { display: flex; height: 100%; flex-direction: column; }
+    #payment-frame { width: 100%; min-height: 0; flex: 1; border: 1px solid var(--line); border-radius: 10px; background: white; }
+    .payment-dialog-note { margin: 12px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
     .driver-reviews-summary {
       margin-bottom: 12px;
       color: var(--muted);
@@ -953,6 +957,7 @@
       background: #151128;
       box-shadow: 0 24px 70px rgba(0, 0, 0, .5);
     }
+    html[data-theme="dark"] #payment-frame { border-color: var(--line); background: white; }
     html[data-theme="dark"] dialog::backdrop { background: rgba(5, 4, 14, .76); backdrop-filter: blur(5px); }
     html[data-theme="dark"] .dialog-heading h2 { color: var(--ink); }
     html[data-theme="dark"] .dialog-close { color: var(--muted); background: #211c35; }

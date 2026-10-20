@@ -20,9 +20,10 @@ void main() {
     expect(script, contains('/functions/v1/ride-payment'));
     expect(script, contains("action: 'create_order'"));
     expect(script, contains("action: 'verify_payment'"));
-    expect(script, contains('https://mercury.phonepe.com/web/bundle/checkout.js'));
-    expect(script, contains('merchant_order_id: order.merchant_order_id'));
-    expect(script, contains("response === 'USER_CANCEL'"));
+    expect(script, contains('order.provider_order_id'));
+    expect(html, contains('Pine Labs secure checkout'));
+    expect(script, contains('action: \'verify_payment\''));
+    expect(script, isNot(contains('phonepe')));
     expect(script, isNot(contains('razorpay')));
     expect(script, contains("addEventListener('touchstart'"));
     expect(script, contains("addEventListener('touchend'"));
@@ -110,6 +111,7 @@ void main() {
     expect(find.text('Aadhaar card — front'), findsOneWidget);
     expect(find.text('RC — front'), findsOneWidget);
     expect(find.text('Insurance copy'), findsOneWidget);
+    expect(find.textContaining('Pine Labs payment'), findsOneWidget);
     expect(
       find.textContaining('selected documents stay on this device'),
       findsOneWidget,
