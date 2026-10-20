@@ -2,6 +2,14 @@
 
 Flutter ride-sharing app with Supabase authentication.
 
+## Legal pages
+
+The legal pages are published through GitHub Pages:
+
+- Terms and Conditions: https://otoridesindia-beep.github.io/coRiderly/terms.html
+- Privacy Policy: https://otoridesindia-beep.github.io/coRiderly/privacy.html
+- Refund Policy: https://otoridesindia-beep.github.io/coRiderly/refund.html
+
 ## Phone and 4-digit MPIN setup
 
 The app uses the `phone-pin-auth` Supabase Edge Function because Supabase Auth
@@ -70,25 +78,32 @@ longer credential for accounts requiring stronger protection.
 
 ## Pay to publish a ride
 
-Each ride requires a separate ₹39 Razorpay payment. The ride is first kept in
-`pending_payment` and becomes visible only after the Edge Function verifies the
-Razorpay signature and confirms the payment is captured. The app cannot insert
-or promote rides directly.
+Each ride requires a separate ₹39 PhonePe payment. The ride stays in
+`pending_payment` until the authenticated `ride-payment` Edge Function checks
+the order status with PhonePe and confirms the payment is `COMPLETED` for the
+exact fee. The app cannot insert or promote rides directly.
 
-After applying `supabase/migrations/20261009000400_require_payment_before_ride_publish.sql`,
-configure the Razorpay **test** credentials as Supabase Edge Function secrets:
+Apply the migrations in order, ending with
+`supabase/migrations/20261020000100_phonepe_payments.sql`. Configure the
+PhonePe **sandbox** credentials as Supabase Edge Function secrets
+(`PHONEPE_ENV` defaults to `sandbox`; set it to `production` only with live
+credentials):
 
 ```powershell
 supabase secrets set --project-ref ecefjyoaqyxdjyjsmpyd `
-  RAZORPAY_KEY_ID=<razorpay-test-key-id> `
-  RAZORPAY_KEY_SECRET=<razorpay-test-key-secret>
+  PHONEPE_CLIENT_ID=<client-id> `
+  PHONEPE_CLIENT_VERSION=<client-version> `
+  PHONEPE_CLIENT_SECRET=<client-secret> `
+  PHONEPE_ENV=sandbox
 supabase functions deploy ride-payment --project-ref ecefjyoaqyxdjyjsmpyd
 ```
 
-Never put the Razorpay secret in the app or commit it. First complete a test
-payment and verify the corresponding `ride_payments` row is `paid` and its ride
-is `open`. Switch to live Razorpay credentials only after your merchant account
-is approved and end-to-end testing succeeds.
+For local Edge Function development, copy `.env.example` to `.env`, fill in the
+PhonePe credentials and required Supabase function secrets, then run
+`supabase functions serve ride-payment --env-file .env`. `.env` is ignored by
+Git. Never put the PhonePe client secret in the app or commit it. Complete a
+test payment and verify the corresponding `ride_payments` row is `paid` and its
+ride is `open` before configuring live credentials in Supabase.
 
 ## Ride search and driver documents
 
@@ -111,8 +126,8 @@ For existing projects, apply these migrations in order after the core
 1. `supabase/migrations/20261009000100_documents_and_payments.sql` adds
    private document metadata in
 `driver_documents`, a private Storage bucket for files, an optional
-`profiles.avatar_path`, and `ride_payments` for the server-verified Razorpay
-platform fee.
+`profiles.avatar_path`, and `ride_payments` for the server-verified ride
+publishing platform fee.
 2. `supabase/migrations/20261009000200_authenticated_ride_publishing.sql`
    adds authenticated ride creation; the payment-required migration below
    supersedes its direct-insert policy.
@@ -132,11 +147,12 @@ records must be written by trusted backend code, not directly by the app.
 Never store an MPIN or raw Aadhaar number in these tables.
 
 The HTML ride screen loads open rides for authenticated users. Ride publication
-uses the `ride-payment` Edge Function and requires the verified per-ride
-payment described above. Seat bookings and driver reviews use Supabase. Riders
-can review a driver after the trip date only if they have a confirmed or
-completed booking; reviews are visible to authenticated users on each ride
-card. Selected documents remain local and are not uploaded or verified.
+uses the `ride-payment` Edge Function and PhonePe Standard Checkout, requiring
+the server-verified per-ride payment described above. Seat bookings and driver
+reviews use Supabase. Riders can review a driver after the trip date only if
+they have a confirmed or completed booking; reviews are visible to authenticated
+users on each ride card. Selected documents remain local and are not uploaded
+or verified.
 
 ## Local HTML experience
 

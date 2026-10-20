@@ -33,7 +33,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
     let currentUserId = null;
     let pendingRideId = null;
     let pendingRideDetails = null;
-    let razorpayCheckoutPromise = null;
+    let phonePeCheckoutPromise = null;
 
     function updateProfileDisplay() {
       const initials = profileData.name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'AM';
@@ -106,70 +106,50 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       return result;
     }
 
-    function loadRazorpayCheckout() {
-      if (window.Razorpay) return Promise.resolve();
-      if (razorpayCheckoutPromise) return razorpayCheckoutPromise;
-      razorpayCheckoutPromise = new Promise((resolve, reject) => {
+    function loadPhonePeCheckout() {
+      if (window.PhonePeCheckout) return Promise.resolve();
+      if (phonePeCheckoutPromise) return phonePeCheckoutPromise;
+      phonePeCheckoutPromise = new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.src = 'https://mercury.phonepe.com/web/bundle/checkout.js';
         script.async = true;
-        script.onload = () => window.Razorpay
+        script.onload = () => window.PhonePeCheckout
           ? resolve()
-          : reject(new Error('Razorpay checkout did not load. Check your internet connection.'));
-        script.onerror = () => reject(new Error('Could not load Razorpay checkout. Check your internet connection.'));
+          : reject(new Error('PhonePe checkout did not load. Check your internet connection.'));
+        script.onerror = () => reject(new Error('Could not load PhonePe checkout. Check your internet connection.'));
         document.head.append(script);
       }).catch((error) => {
-        razorpayCheckoutPromise = null;
+        phonePeCheckoutPromise = null;
         throw error;
       });
-      return razorpayCheckoutPromise;
+      return phonePeCheckoutPromise;
     }
 
-    function openRidePaymentCheckout(order, phone) {
-      return new Promise((resolve, reject) => {
-        let settled = false;
-        const rejectOnce = (error) => {
-          if (settled) return;
-          settled = true;
-          reject(error);
-        };
-        const checkout = new window.Razorpay({
-          key: order.key_id,
-          amount: order.amount,
-          currency: order.currency,
-          name: 'CoRiderly',
-          description: 'One-time ride publishing fee',
-          order_id: order.order_id,
-          prefill: { contact: phone },
-          theme: { color: '#7c3aed' },
-          handler: async (payment) => {
-            try {
-              const result = await ridePaymentRequest({
-                action: 'verify_payment',
-                ride_id: order.ride_id,
-                razorpay_order_id: payment.razorpay_order_id,
-                razorpay_payment_id: payment.razorpay_payment_id,
-                razorpay_signature: payment.razorpay_signature
-              });
-              if (!result?.ride) {
-                throw new Error('Payment was verified, but the ride was not returned. Refresh your rides.');
-              }
-              if (settled) return;
-              settled = true;
-              resolve(result.ride);
-            } catch (error) {
-              rejectOnce(error);
+    async function openRidePaymentCheckout(order) {
+      // PhonePe reports only whether the user finished or closed checkout;
+      // the server confirms the real payment state before the ride is published.
+      await new Promise((resolve, reject) => {
+        window.PhonePeCheckout.transact({
+          tokenUrl: order.redirect_url,
+          type: 'IFRAME',
+          callback: (response) => {
+            if (response === 'USER_CANCEL') {
+              reject(new Error('Payment cancelled. Your ride has not been published.'));
+            } else {
+              resolve();
             }
-          },
-          modal: {
-            ondismiss: () => rejectOnce(new Error('Payment was not completed. Your ride has not been published.'))
           }
         });
-        checkout.on('payment.failed', (event) => {
-          rejectOnce(new Error(event.error?.description || 'Payment failed. Your ride has not been published.'));
-        });
-        checkout.open();
       });
+      const result = await ridePaymentRequest({
+        action: 'verify_payment',
+        ride_id: order.ride_id,
+        merchant_order_id: order.merchant_order_id
+      });
+      if (!result?.ride) {
+        throw new Error('Payment was verified, but the ride was not returned. Refresh your rides.');
+      }
+      return result.ride;
     }
 
     function renderRideCard(ride) {
@@ -850,11 +830,21 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       };
       const samePendingRide = pendingRideId &&
         JSON.stringify(ride) === JSON.stringify(pendingRideDetails);
-      const order = await ridePaymentRequest({
+      let order;
+      const createOrderPayload = {
         action: 'create_order',
+        phone,
         ride,
         ...(samePendingRide ? { ride_id: pendingRideId } : {})
-      });
+      };
+      try {
+        order = await ridePaymentRequest(createOrderPayload);
+      } catch (error) {
+        if (!samePendingRide || !error.message.includes('different payment provider')) throw error;
+        pendingRideId = null;
+        pendingRideDetails = null;
+        order = await ridePaymentRequest({ action: 'create_order', phone, ride });
+      }
       if (order.already_paid) {
         pendingRideId = null;
         pendingRideDetails = null;
@@ -867,8 +857,8 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       pendingRideId = order.ride_id;
       pendingRideDetails = ride;
       submitButton.textContent = 'Complete ₹39 payment…';
-      await loadRazorpayCheckout();
-      const paymentResult = await openRidePaymentCheckout(order, phone);
+      await loadPhonePeCheckout();
+      const paymentResult = await openRidePaymentCheckout(order);
       const savedRide = paymentResult;
       pendingRideId = null;
       pendingRideDetails = null;

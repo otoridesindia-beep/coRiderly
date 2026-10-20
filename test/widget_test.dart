@@ -20,6 +20,10 @@ void main() {
     expect(script, contains('/functions/v1/ride-payment'));
     expect(script, contains("action: 'create_order'"));
     expect(script, contains("action: 'verify_payment'"));
+    expect(script, contains('https://mercury.phonepe.com/web/bundle/checkout.js'));
+    expect(script, contains('merchant_order_id: order.merchant_order_id'));
+    expect(script, contains("response === 'USER_CANCEL'"));
+    expect(script, isNot(contains('razorpay')));
     expect(script, contains("addEventListener('touchstart'"));
     expect(script, contains("addEventListener('touchend'"));
     expect(script, contains("deltaX < 0"));

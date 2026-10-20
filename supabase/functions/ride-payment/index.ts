@@ -8,6 +8,29 @@ const corsHeaders = {
 };
 
 const PAYMENT_AMOUNT_PAISE = 3900;
+const PROVIDER = "phonepe";
+const DEFAULT_REDIRECT_URL = "https://otoridesindia-beep.github.io/coRiderly/";
+
+const PHONEPE_ENDPOINTS = {
+  sandbox: {
+    token: "https://api-preprod.phonepe.com/apis/pg-sandbox/v1/oauth/token",
+    api: "https://api-preprod.phonepe.com/apis/pg-sandbox/checkout/v2",
+  },
+  production: {
+    token: "https://api.phonepe.com/apis/identity-manager/v1/oauth/token",
+    api: "https://api.phonepe.com/apis/pg/checkout/v2",
+  },
+};
+
+type PhonePeConfig = {
+  clientId: string;
+  clientVersion: string;
+  clientSecret: string;
+  redirectUrl: string;
+  endpoints: typeof PHONEPE_ENDPOINTS.sandbox;
+};
+
+let cachedToken: { value: string; expiresAt: number } | null = null;
 
 type RideDetails = {
   origin: string;
@@ -84,70 +107,172 @@ function readRide(value: unknown): RideDetails | null {
   };
 }
 
-function toHex(bytes: ArrayBuffer): string {
-  return Array.from(new Uint8Array(bytes), (byte) =>
-    byte.toString(16).padStart(2, "0")
-  ).join("");
+function readPhonePeConfig(): PhonePeConfig | null {
+  const clientId = Deno.env.get("PHONEPE_CLIENT_ID");
+  const clientVersion = Deno.env.get("PHONEPE_CLIENT_VERSION");
+  const clientSecret = Deno.env.get("PHONEPE_CLIENT_SECRET");
+  if (!clientId || !clientVersion || !clientSecret) return null;
+  const environment = Deno.env.get("PHONEPE_ENV") === "production"
+    ? "production"
+    : "sandbox";
+  return {
+    clientId,
+    clientVersion,
+    clientSecret,
+    redirectUrl: Deno.env.get("PHONEPE_REDIRECT_URL") || DEFAULT_REDIRECT_URL,
+    endpoints: PHONEPE_ENDPOINTS[environment],
+  };
 }
 
-async function hmacHex(secret: string, message: string): Promise<string> {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  return toHex(
-    await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message)),
-  );
-}
+async function getPhonePeToken(config: PhonePeConfig): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  if (cachedToken && cachedToken.expiresAt - 60 > now) return cachedToken.value;
 
-function constantTimeEqual(left: string, right: string): boolean {
-  if (left.length !== right.length) return false;
-  let difference = 0;
-  for (let index = 0; index < left.length; index++) {
-    difference |= left.charCodeAt(index) ^ right.charCodeAt(index);
+  const response = await fetch(config.endpoints.token, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: config.clientId,
+      client_version: config.clientVersion,
+      client_secret: config.clientSecret,
+      grant_type: "client_credentials",
+    }),
+  });
+  const result: unknown = await response.json().catch(() => null);
+  if (!response.ok || !isRecord(result) || typeof result.access_token !== "string") {
+    console.error("PhonePe token request failed:", { status: response.status });
+    throw new Error(
+      `Payment provider authorization failed (HTTP ${response.status}).`,
+    );
   }
-  return difference === 0;
+  cachedToken = {
+    value: result.access_token,
+    expiresAt: typeof result.expires_at === "number"
+      ? result.expires_at
+      : now + 300,
+  };
+  return cachedToken.value;
 }
 
-async function razorpayRequest(
-  url: string,
+async function phonePeRequest(
+  config: PhonePeConfig,
+  path: string,
   method: "GET" | "POST",
-  keyId: string,
-  keySecret: string,
   body?: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
-  const response = await fetch(url, {
+  const token = await getPhonePeToken(config);
+  const response = await fetch(`${config.endpoints.api}${path}`, {
     method,
     headers: {
-      Authorization: `Basic ${btoa(`${keyId}:${keySecret}`)}`,
+      Authorization: `O-Bearer ${token}`,
       "Content-Type": "application/json",
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
-  const result: unknown = await response.json();
+  const result: unknown = await response.json().catch(() => null);
   if (!response.ok || !isRecord(result)) {
-    const providerError =
-      isRecord(result) && isRecord(result.error) ? result.error : null;
-    const errorCode = providerError && typeof providerError.code === "string"
-      ? providerError.code
+    const code = isRecord(result) && typeof result.code === "string"
+      ? result.code
       : "unknown";
-    const description = providerError &&
-        typeof providerError.description === "string"
-      ? providerError.description
-      : "No provider description";
-    console.error("Razorpay API request failed:", {
-      status: response.status,
-      code: errorCode,
-      description,
-    });
+    console.error("PhonePe API request failed:", { status: response.status, code });
     throw new Error(
-      `Payment provider request failed (HTTP ${response.status}, ${errorCode}).`,
+      `Payment provider request failed (HTTP ${response.status}, ${code}).`,
     );
   }
   return result;
+}
+
+type PhonePeOrder = { orderId: string; redirectUrl: string };
+
+async function createPhonePeOrder(
+  config: PhonePeConfig,
+  merchantOrderId: string,
+  userId: string,
+): Promise<PhonePeOrder> {
+  const result = await phonePeRequest(config, "/pay", "POST", {
+    merchantOrderId,
+    amount: PAYMENT_AMOUNT_PAISE,
+    expireAfter: 1200,
+    metaInfo: { udf1: userId },
+    paymentFlow: {
+      type: "PG_CHECKOUT",
+      message: "CoRiderly ride publishing fee",
+      merchantUrls: { redirectUrl: config.redirectUrl },
+    },
+  });
+  if (typeof result.orderId !== "string" ||
+    typeof result.redirectUrl !== "string" || !result.redirectUrl) {
+    throw new Error("Payment provider did not return a usable order.");
+  }
+  return { orderId: result.orderId, redirectUrl: result.redirectUrl };
+}
+
+type PhonePeStatus = {
+  state: string;
+  amount: number | null;
+  transactionId: string | null;
+};
+
+async function getPhonePeStatus(
+  config: PhonePeConfig,
+  merchantOrderId: string,
+): Promise<PhonePeStatus> {
+  const result = await phonePeRequest(
+    config,
+    `/order/${encodeURIComponent(merchantOrderId)}/status?details=false`,
+    "GET",
+  );
+  const attempts = Array.isArray(result.paymentDetails)
+    ? result.paymentDetails.filter(isRecord)
+    : [];
+  const completed = attempts.find((attempt) => attempt.state === "COMPLETED");
+  const transactionId = completed && typeof completed.transactionId === "string"
+    ? completed.transactionId
+    : typeof result.orderId === "string"
+    ? result.orderId
+    : null;
+  return {
+    state: typeof result.state === "string" ? result.state : "UNKNOWN",
+    amount: typeof result.amount === "number" ? result.amount : null,
+    transactionId,
+  };
+}
+
+async function publishPaidRide(
+  admin: ReturnType<typeof createClient>,
+  rideId: string,
+  userId: string,
+  merchantOrderId: string,
+  transactionId: string,
+) {
+  const { data: publishedRideId, error: publishError } = await admin.rpc(
+    "publish_paid_ride",
+    {
+      p_ride_id: rideId,
+      p_driver_id: userId,
+      p_provider_order_id: merchantOrderId,
+      p_provider_payment_id: transactionId,
+    },
+  );
+  if (publishError || publishedRideId !== rideId) {
+    console.error("Could not publish verified paid ride:", publishError?.message);
+    throw new Error("Payment is confirmed, but the ride could not be published. Contact support.");
+  }
+  const { data: ride, error: rideError } = await admin
+    .from("rides")
+    .select("*")
+    .eq("id", rideId)
+    .single();
+  if (rideError || !ride) {
+    throw new Error("Payment succeeded, but the ride could not be loaded. Refresh your rides.");
+  }
+  return ride;
+}
+
+function readPhone(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const digits = value.replace(/\D/g, "").slice(-10);
+  return /^[6-9]\d{9}$/.test(digits) ? digits : null;
 }
 
 Deno.serve(async (request: Request) => {
@@ -160,9 +285,8 @@ Deno.serve(async (request: Request) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const keyId = Deno.env.get("RAZORPAY_KEY_ID");
-  const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
-  if (!supabaseUrl || !serviceRoleKey || !keyId || !keySecret) {
+  const config = readPhonePeConfig();
+  if (!supabaseUrl || !serviceRoleKey || !config) {
     console.error("Ride payment function is missing required secrets.");
     return respond(503, { message: "Payments are not configured yet." });
   }
@@ -197,7 +321,7 @@ Deno.serve(async (request: Request) => {
       if (typeof payload.ride_id === "string" && payload.ride_id) {
         const { data: existing, error } = await admin
           .from("ride_payments")
-          .select("ride_id, provider_order_id, provider_payment_id, status")
+          .select("ride_id, provider, provider_order_id, provider_payment_id, status")
           .eq("ride_id", payload.ride_id)
           .eq("payer_id", userData.user.id)
           .maybeSingle();
@@ -211,9 +335,41 @@ Deno.serve(async (request: Request) => {
         if (!existing || existing.status !== "created") {
           return respond(409, { message: "This ride payment can no longer be resumed. Start a new ride offer." });
         }
+        if (existing.provider !== PROVIDER) {
+          return respond(409, {
+            message: "This pending ride uses a different payment provider. Retry to create a new PhonePe order.",
+          });
+        }
+        const previousOrderId = String(existing.provider_order_id);
+        const previous = await getPhonePeStatus(config, previousOrderId)
+          .catch(() => null);
+        if (previous?.state === "COMPLETED" &&
+          previous.amount === PAYMENT_AMOUNT_PAISE && previous.transactionId) {
+          await publishPaidRide(
+            admin,
+            String(existing.ride_id),
+            userData.user.id,
+            previousOrderId,
+            previous.transactionId,
+          );
+          return respond(200, { already_paid: true, ride_id: existing.ride_id });
+        }
+        const resumedOrderId = `cr_${crypto.randomUUID().replaceAll("-", "")}`;
+        const resumedOrder = await createPhonePeOrder(
+          config,
+          resumedOrderId,
+          userData.user.id,
+        );
+        const { error: resumeError } = await admin
+          .from("ride_payments")
+          .update({ provider_order_id: resumedOrderId })
+          .eq("ride_id", existing.ride_id)
+          .eq("payer_id", userData.user.id)
+          .eq("status", "created");
+        if (resumeError) throw new Error("Could not resume the ride payment. Start a new ride offer.");
         return respond(200, {
-          key_id: keyId,
-          order_id: existing.provider_order_id,
+          merchant_order_id: resumedOrderId,
+          redirect_url: resumedOrder.redirectUrl,
           ride_id: existing.ride_id,
           amount: PAYMENT_AMOUNT_PAISE,
           currency: "INR",
@@ -222,22 +378,11 @@ Deno.serve(async (request: Request) => {
 
       const ride = readRide(payload.ride);
       if (!ride) return respond(400, { message: "Check the ride details and try again." });
+      const phone = readPhone(payload.phone);
+      if (!phone) return respond(400, { message: "Enter a valid 10-digit Indian mobile number." });
 
-      const order = await razorpayRequest(
-        "https://api.razorpay.com/v1/orders",
-        "POST",
-        keyId,
-        keySecret,
-        {
-          amount: PAYMENT_AMOUNT_PAISE,
-          currency: "INR",
-          receipt: `smr_${crypto.randomUUID().replaceAll("-", "").slice(0, 20)}`,
-          notes: { driver_id: userData.user.id },
-        },
-      );
-      if (typeof order.id !== "string") {
-        throw new Error("Payment provider did not return a usable order.");
-      }
+      const merchantOrderId = `cr_${crypto.randomUUID().replaceAll("-", "")}`;
+      const order = await createPhonePeOrder(config, merchantOrderId, userData.user.id);
 
       const { data: rideId, error } = await admin.rpc("create_pending_paid_ride", {
         p_driver_id: userData.user.id,
@@ -252,15 +397,15 @@ Deno.serve(async (request: Request) => {
         p_available_seats: ride.available_seats,
         p_bags: ride.bags,
         p_price_per_seat: ride.price_per_seat,
-        p_provider_order_id: order.id,
+        p_provider_order_id: merchantOrderId,
       });
       if (error || typeof rideId !== "string") {
         console.error("Could not create paid ride draft:", error?.message);
         throw new Error("Could not prepare the ride payment. Please try again.");
       }
       return respond(200, {
-        key_id: keyId,
-        order_id: order.id,
+        merchant_order_id: merchantOrderId,
+        redirect_url: order.redirectUrl,
         ride_id: rideId,
         amount: PAYMENT_AMOUNT_PAISE,
         currency: "INR",
@@ -268,88 +413,38 @@ Deno.serve(async (request: Request) => {
     }
 
     if (payload.action === "verify_payment") {
-      const {
-        ride_id: rideId,
-        razorpay_order_id: orderId,
-        razorpay_payment_id: paymentId,
-        razorpay_signature: signature,
-      } = payload;
-      if (
-        typeof rideId !== "string" ||
-        typeof orderId !== "string" ||
-        typeof paymentId !== "string" ||
-        typeof signature !== "string"
-      ) {
+      const { ride_id: rideId, merchant_order_id: orderId } = payload;
+      if (typeof rideId !== "string" || typeof orderId !== "string") {
         return respond(400, { message: "Payment confirmation is incomplete." });
       }
 
       const { data: payment, error: paymentError } = await admin
         .from("ride_payments")
-        .select("ride_id, payer_id, provider_order_id, status, provider_payment_id")
+        .select("ride_id, payer_id, provider, provider_order_id, status, provider_payment_id")
         .eq("ride_id", rideId)
         .eq("payer_id", userData.user.id)
         .maybeSingle();
       if (paymentError) throw new Error("Could not verify the ride payment.");
-      if (!payment || payment.provider_order_id !== orderId) {
+      if (!payment || payment.provider !== PROVIDER ||
+        payment.provider_order_id !== orderId) {
         return respond(403, { message: "This payment does not match your ride." });
       }
 
-      const expectedSignature = await hmacHex(
-        keySecret,
-        `${orderId}|${paymentId}`,
-      );
-      if (!constantTimeEqual(expectedSignature, signature)) {
-        return respond(400, { message: "Payment verification failed. The ride was not published." });
-      }
-
-      let providerPayment = await razorpayRequest(
-        `https://api.razorpay.com/v1/payments/${encodeURIComponent(paymentId)}`,
-        "GET",
-        keyId,
-        keySecret,
-      );
-      if (
-        providerPayment.order_id !== orderId ||
-        providerPayment.amount !== PAYMENT_AMOUNT_PAISE ||
-        providerPayment.currency !== "INR"
-      ) {
+      const status = await getPhonePeStatus(config, orderId);
+      if (status.amount !== PAYMENT_AMOUNT_PAISE) {
         return respond(400, { message: "Payment details do not match this ride fee." });
       }
-      if (providerPayment.status === "authorized") {
-        providerPayment = await razorpayRequest(
-          `https://api.razorpay.com/v1/payments/${encodeURIComponent(paymentId)}/capture`,
-          "POST",
-          keyId,
-          keySecret,
-          { amount: PAYMENT_AMOUNT_PAISE, currency: "INR" },
-        );
-      }
-      if (providerPayment.status !== "captured") {
-        return respond(402, { message: "Payment has not been captured. The ride is not published." });
+      if (status.state !== "COMPLETED" || !status.transactionId) {
+        return respond(402, { message: "Payment has not been completed. The ride is not published." });
       }
 
-      const { data: publishedRideId, error: publishError } = await admin.rpc(
-        "publish_paid_ride",
-        {
-          p_ride_id: rideId,
-          p_driver_id: userData.user.id,
-          p_provider_order_id: orderId,
-          p_provider_payment_id: paymentId,
-        },
+      const ride = await publishPaidRide(
+        admin,
+        rideId,
+        userData.user.id,
+        orderId,
+        status.transactionId,
       );
-      if (publishError || publishedRideId !== rideId) {
-        console.error("Could not publish verified paid ride:", publishError?.message);
-        throw new Error("Payment is confirmed, but the ride could not be published. Contact support.");
-      }
-
-      const { data: ride, error: rideError } = await admin
-        .from("rides")
-        .select("*")
-        .eq("id", rideId)
-        .single();
-      if (rideError || !ride) {
-        throw new Error("Payment succeeded, but the ride could not be loaded. Refresh your rides.");
-      }
       return respond(200, { message: "Payment verified and ride published.", ride });
     }
 
