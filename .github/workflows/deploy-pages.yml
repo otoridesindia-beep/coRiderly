@@ -34,6 +34,7 @@ jobs:
           cp -R assets/web/. _site/
           cp docs/privacy.html _site/privacy.html
           cp docs/terms.html _site/terms.html
+          cp docs/refund.html _site/refund.html
           touch _site/.nojekyll
 
       - name: Upload site artifact
