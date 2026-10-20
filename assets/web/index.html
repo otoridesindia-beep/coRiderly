@@ -4,6 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CoRiderly — Find your ride</title>
+  <script>
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem('coriderly-theme'); } catch (e) {}
+      if (t !== 'light' && t !== 'dark') {
+        t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      }
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -13,6 +23,7 @@
         <span class="welcome-badge-dot" aria-hidden="true"></span>
         <span>Community carpooling</span>
       </div>
+      <button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch to light theme" title="Toggle theme"></button>
     </header>
 
     <section class="welcome-brand-section" aria-label="CoRiderly brand">
@@ -103,6 +114,7 @@
         <a href="#offer-screen" id="nav-offer">Offer a ride</a>
       </nav>
       <div class="profile-area">
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch to light theme" title="Toggle theme"></button>
         <button class="profile" id="profile-button" aria-label="Open profile menu" aria-haspopup="true" aria-controls="profile-menu" aria-expanded="false"><span class="avatar" id="profile-avatar">AM</span><span id="profile-name">Alex Morgan</span></button>
         <div class="profile-menu" id="profile-menu" hidden>
           <div class="profile-summary"><strong id="menu-profile-name">Alex Morgan</strong><span id="menu-profile-email">Add your email address</span></div>

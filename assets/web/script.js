@@ -946,3 +946,22 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
         if (button.isConnected) button.disabled = false;
       }
     });
+(function () {
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    var next = theme === 'dark' ? 'light' : 'dark';
+    document.querySelectorAll('[data-theme-toggle]').forEach(function (b) {
+      b.setAttribute('aria-label', 'Switch to ' + next + ' theme');
+    });
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', theme === 'dark' ? '#0b081b' : '#faf9fc');
+  }
+  applyTheme(document.documentElement.getAttribute('data-theme') || 'dark');
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest && e.target.closest('[data-theme-toggle]');
+    if (!btn) return;
+    var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem('coriderly-theme', next); } catch (err) {}
+    applyTheme(next);
+  });
+})();
