@@ -643,10 +643,11 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       cards.forEach((card) => {
         const booking = bookings.find((item) => item.rideId === card.dataset.rideId);
         const button = card.querySelector('.ride-owner-button');
-        if (!button || button.disabled || button.classList.contains('ride-share-button')) return;
-        button.textContent = booking ? 'Booked' : 'Book seat';
+        if (!button || card.dataset.owner === 'true') return;
+        button.classList.toggle('ride-share-button', Boolean(booking));
+        button.textContent = booking ? 'Share' : 'Book seat';
         const bookingIsPast = booking && booking.travelDate < localDateString(new Date());
-        button.disabled = Boolean(bookingIsPast || booking?.status === 'completed');
+        button.disabled = !booking && Boolean(bookingIsPast);
         if (booking) {
           button.setAttribute('aria-pressed', 'true');
         } else {
