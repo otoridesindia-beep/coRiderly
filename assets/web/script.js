@@ -232,8 +232,8 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       card.querySelector('.ride-seats-available').textContent =
         `${ride.available_seats} ${ride.available_seats === 1 ? 'seat' : 'seats'} available`;
       const bookButton = card.querySelector('.ride-owner-button');
-      bookButton.textContent = isMine ? 'Your ride' : 'Book seat';
-      bookButton.disabled = isMine;
+      bookButton.textContent = isMine ? 'Share' : 'Book seat';
+      if (isMine) bookButton.classList.add('ride-share-button');
       if (phone) {
         const normalizedPhone = phone.replace(/[^\d]/g, '');
         const whatsappPhone = normalizedPhone.length === 10
@@ -643,7 +643,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       cards.forEach((card) => {
         const booking = bookings.find((item) => item.rideId === card.dataset.rideId);
         const button = card.querySelector('.ride-owner-button');
-        if (!button || button.disabled) return;
+        if (!button || button.disabled || button.classList.contains('ride-share-button')) return;
         button.textContent = booking ? 'Booked' : 'Book seat';
         const bookingIsPast = booking && booking.travelDate < localDateString(new Date());
         button.disabled = Boolean(bookingIsPast || booking?.status === 'completed');
@@ -911,8 +911,30 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
     });
 
     rideList.addEventListener('click', async (event) => {
+      const shareButton = event.target.closest('.ride-share-button');
+      if (!shareButton) return;
+      const card = shareButton.closest('.ride-card');
+      const text = [
+        'Ride on CoRiderly',
+        `${card.querySelector('.ride-origin')?.textContent || ''} → ${card.querySelector('.ride-destination')?.textContent || ''}`,
+        `${card.querySelector('.ride-travel-date')?.textContent || ''} ${card.querySelector('.ride-departure-time')?.textContent || ''}`.trim(),
+        `${card.querySelector('.ride-fare-amount')?.textContent || ''} per seat`,
+        'Book your seat: https://otoridesindia-beep.github.io/coRiderly/'
+      ].join('\n');
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: 'CoRiderly ride', text });
+        } else {
+          window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') showToast('Could not share this ride.');
+      }
+    });
+
+    rideList.addEventListener('click', async (event) => {
       const button = event.target.closest('.book-btn');
-      if (!button || button.disabled) return;
+      if (!button || button.disabled || button.classList.contains('ride-share-button')) return;
       const card = button.closest('.ride-card');
       const rideId = card?.dataset.rideId;
       if (!rideId || !accessToken || !currentUserId) {
