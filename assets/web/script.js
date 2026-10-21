@@ -254,7 +254,14 @@
         `${ride.available_seats} ${ride.available_seats === 1 ? 'seat' : 'seats'} available`;
       const bookButton = card.querySelector('.ride-owner-button');
       bookButton.textContent = isMine ? 'Share' : 'Book seat';
-      if (isMine) bookButton.classList.add('ride-share-button');
+      if (isMine) {
+        bookButton.classList.add('ride-share-button');
+        const manage = document.createElement('div');
+        manage.className = 'ride-manage-actions';
+        manage.innerHTML = '<button class="ride-edit-button" type="button">Edit</button><button class="ride-delete-button" type="button">Delete</button>';
+        card.querySelector('.ride-card-footer').after(manage);
+        card._ride = ride;
+      }
       if (phone) {
         const normalizedPhone = phone.replace(/[^\d]/g, '');
         const whatsappPhone = normalizedPhone.length === 10
@@ -928,6 +935,76 @@
       } finally {
         submitButton.disabled = false;
         submitButton.textContent = 'Pay â‚¹39 & publish ride';
+      }
+    });
+
+    const editRideDialog = document.getElementById('edit-ride-dialog');
+    const editRideForm = document.getElementById('edit-ride-form');
+    let editingRideId = null;
+
+    rideList.addEventListener('click', async (event) => {
+      const editButton = event.target.closest('.ride-edit-button');
+      const deleteButton = event.target.closest('.ride-delete-button');
+      if (!editButton && !deleteButton) return;
+      const card = event.target.closest('.ride-card');
+      const ride = card?._ride;
+      if (!ride) return;
+      if (editButton) {
+        editingRideId = ride.id;
+        document.getElementById('edit-ride-origin').value = ride.origin;
+        document.getElementById('edit-ride-destination').value = ride.destination;
+        document.getElementById('edit-ride-pickup').value = ride.pickup_point || '';
+        document.getElementById('edit-ride-date').value = ride.travel_date;
+        document.getElementById('edit-ride-time').value = String(ride.departure_time).slice(0, 5);
+        document.getElementById('edit-ride-seats').value = ride.available_seats;
+        document.getElementById('edit-ride-seats').max = Math.max(ride.car_capacity - 1, 1);
+        document.getElementById('edit-ride-bags').value = ride.bags;
+        document.getElementById('edit-ride-price').value = ride.price_per_seat;
+        editRideDialog.showModal();
+        return;
+      }
+      if (!window.confirm('Delete this ride? Riders who booked it will be cancelled.')) return;
+      deleteButton.disabled = true;
+      try {
+        await supabaseRequest('rest/v1/rpc/delete_own_ride', {
+          method: 'POST',
+          body: JSON.stringify({ p_ride_id: ride.id })
+        });
+        await loadRides();
+        await loadBookings();
+        showToast('Ride deleted.');
+      } catch (error) {
+        showToast(error.message);
+        deleteButton.disabled = false;
+      }
+    });
+
+    editRideForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submit = editRideForm.querySelector('[type="submit"]');
+      submit.disabled = true;
+      try {
+        await supabaseRequest('rest/v1/rpc/update_own_ride', {
+          method: 'POST',
+          body: JSON.stringify({
+            p_ride_id: editingRideId,
+            p_origin: document.getElementById('edit-ride-origin').value,
+            p_destination: document.getElementById('edit-ride-destination').value,
+            p_pickup_point: document.getElementById('edit-ride-pickup').value,
+            p_travel_date: document.getElementById('edit-ride-date').value,
+            p_departure_time: document.getElementById('edit-ride-time').value,
+            p_available_seats: Number(document.getElementById('edit-ride-seats').value),
+            p_bags: Number(document.getElementById('edit-ride-bags').value),
+            p_price_per_seat: Number(document.getElementById('edit-ride-price').value)
+          })
+        });
+        editRideDialog.close();
+        await loadRides();
+        showToast('Ride updated.');
+      } catch (error) {
+        showToast(error.message);
+      } finally {
+        submit.disabled = false;
       }
     });
 

@@ -680,6 +680,9 @@
       box-shadow: none;
     }
     #driver-reviews-dialog { width: min(420px, calc(100% - 40px)); max-height: 78vh; }
+    .ride-manage-actions { display: flex; gap: 8px; padding: 0 16px 14px; }
+    .ride-manage-actions button { flex: 1; min-height: 38px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: inherit; font: inherit; font-weight: 700; cursor: pointer; }
+    .ride-manage-actions .ride-delete-button { color: #d64545; border-color: rgba(214, 69, 69, .5); }
     #payment-dialog { width: 100vw; max-width: 100vw; height: 100vh; height: 100dvh; max-height: 100dvh; margin: 0; padding: 0; border: 0; border-radius: 0; }
     #payment-dialog .dialog-content { display: flex; height: 100%; box-sizing: border-box; flex-direction: column; padding: 12px; border-radius: 0; }
     #payment-frame { width: 100%; min-height: 0; flex: 1; border: 1px solid var(--line); border-radius: 10px; background: white; }

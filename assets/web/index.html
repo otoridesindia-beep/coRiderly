@@ -277,6 +277,22 @@
       </form>
     </div>
   </dialog>
+  <dialog id="edit-ride-dialog" aria-labelledby="edit-ride-title">
+    <div class="dialog-content">
+      <div class="dialog-heading"><h2 id="edit-ride-title">Edit ride</h2><button class="dialog-close" type="button" data-close-dialog="edit-ride-dialog" aria-label="Close">×</button></div>
+      <form class="profile-form" id="edit-ride-form">
+        <div class="field"><label for="edit-ride-origin">From</label><input id="edit-ride-origin" type="text" required /></div>
+        <div class="field"><label for="edit-ride-destination">To</label><input id="edit-ride-destination" type="text" required /></div>
+        <div class="field"><label for="edit-ride-pickup">Boarding point</label><input id="edit-ride-pickup" type="text" /></div>
+        <div class="field"><label for="edit-ride-date">Travel date</label><input id="edit-ride-date" type="date" required /></div>
+        <div class="field"><label for="edit-ride-time">Departure time</label><input id="edit-ride-time" type="time" required /></div>
+        <div class="field"><label for="edit-ride-seats">Available seats</label><input id="edit-ride-seats" type="number" min="0" max="6" required /></div>
+        <div class="field"><label for="edit-ride-bags">Bags</label><input id="edit-ride-bags" type="number" min="0" max="10" required /></div>
+        <div class="field"><label for="edit-ride-price">Price per seat (₹)</label><input id="edit-ride-price" type="number" min="1" step="1" required /></div>
+        <button class="search-btn dialog-submit" type="submit">Save changes</button>
+      </form>
+    </div>
+  </dialog>
   <dialog id="bookings-dialog" aria-labelledby="bookings-dialog-title">
     <div class="dialog-content">
       <div class="dialog-heading"><h2 id="bookings-dialog-title">My bookings</h2><button class="dialog-close" type="button" data-close-dialog="bookings-dialog" aria-label="Close">×</button></div>
