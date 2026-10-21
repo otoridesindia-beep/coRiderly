@@ -1,4 +1,4 @@
-﻿const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     document.addEventListener('click', (event) => {
       const button = event.target.closest('button:not(:disabled)');
@@ -139,7 +139,7 @@
           if (!silent) {
             verifyPaymentButton.disabled = true;
             closeButton.disabled = true;
-            verifyPaymentButton.textContent = 'Verifying paymentâ€¦';
+            verifyPaymentButton.textContent = 'Verifying payment…';
           }
           try {
             const result = await ridePaymentRequest({
@@ -210,7 +210,7 @@
           <div class="ride-driver-copy">
             <strong class="ride-driver-name"></strong>
             <span class="ride-driver-caption"></span>
-            <button class="ride-feedback-link" type="button">â˜… View rider feedback</button>
+            <button class="ride-feedback-link" type="button">★ View rider feedback</button>
           </div>
         </div>
         <div class="ride-card-footer">
@@ -249,7 +249,7 @@
       card.querySelector('.ride-driver-avatar').textContent = initials;
       card.querySelector('.ride-driver-name').textContent = name;
       card.querySelector('.ride-driver-caption').textContent = isMine ? 'Your ride' : 'CoRiderly member';
-      card.querySelector('.ride-fare-amount').textContent = `â‚¹${ride.price_per_seat}`;
+      card.querySelector('.ride-fare-amount').textContent = `₹${ride.price_per_seat}`;
       card.querySelector('.ride-seats-available').textContent =
         `${ride.available_seats} ${ride.available_seats === 1 ? 'seat' : 'seats'} available`;
       const bookButton = card.querySelector('.ride-owner-button');
@@ -302,7 +302,7 @@
       const driverName = card.querySelector('.ride-driver-name')?.textContent || 'this driver';
       driverReviewsDialog.dataset.driverId = driverId;
       document.getElementById('driver-reviews-title').textContent = `Feedback for ${driverName}`;
-      driverReviewsSummary.textContent = 'Loading rider feedbackâ€¦';
+      driverReviewsSummary.textContent = 'Loading rider feedback…';
       driverReviewsList.replaceChildren();
       driverReviewsDialog.showModal();
       try {
@@ -311,7 +311,7 @@
         );
         if (driverReviewsDialog.dataset.driverId !== driverId) return;
         driverReviewsSummary.textContent = reviews.length
-          ? `${(reviews.reduce((total, review) => total + review.rating, 0) / reviews.length).toFixed(1)} â˜… average Â· ${reviews.length === 50 ? 'latest 50 reviews' : `${reviews.length} ${reviews.length === 1 ? 'review' : 'reviews'}`}`
+          ? `${(reviews.reduce((total, review) => total + review.rating, 0) / reviews.length).toFixed(1)} ★ average · ${reviews.length === 50 ? 'latest 50 reviews' : `${reviews.length} ${reviews.length === 1 ? 'review' : 'reviews'}`}`
           : '';
         if (!reviews.length) {
           const empty = document.createElement('div');
@@ -324,7 +324,7 @@
           const item = document.createElement('article');
           item.className = 'driver-review-item';
           const rating = document.createElement('strong');
-          rating.textContent = `${'â˜…'.repeat(review.rating)}${'â˜†'.repeat(5 - review.rating)} (${review.rating}/5)`;
+          rating.textContent = `${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)} (${review.rating}/5)`;
           const feedback = document.createElement('p');
           feedback.textContent = review.feedback;
           const date = document.createElement('time');
@@ -507,7 +507,7 @@
       const pin = authPin.value;
       const submitButton = event.currentTarget.querySelector('[type="submit"]');
       submitButton.disabled = true;
-      submitButton.textContent = authMode === 'register' ? 'Creating accountâ€¦' : 'Logging inâ€¦';
+      submitButton.textContent = authMode === 'register' ? 'Creating account…' : 'Logging in…';
       try {
         const registering = authMode === 'register';
         const url = `${supabaseUrl}/functions/v1/phone-pin-auth`;
@@ -659,9 +659,9 @@
           status: row.status,
           travelDate: ride.travel_date,
           card,
-          route: `${ride.origin} â†’ ${ride.destination}`,
+          route: `${ride.origin} → ${ride.destination}`,
           time: ride.departure_time,
-          price: `â‚¹${ride.price_per_seat}`,
+          price: `₹${ride.price_per_seat}`,
           reviewId: review?.id || null,
           rating: review?.rating || null,
           feedback: review?.feedback || ''
@@ -698,16 +698,16 @@
           const route = document.createElement('strong');
           route.textContent = booking.route;
           const details = document.createElement('span');
-          details.textContent = `${booking.time} Â· ${booking.price}`;
+          details.textContent = `${booking.time} · ${booking.price}`;
           const reviewSummary = document.createElement('p');
           reviewSummary.className = 'booking-review-summary';
           if (booking.feedback) {
             const summaryLabel = document.createElement('strong');
             summaryLabel.textContent = 'Review: ';
-            const stars = 'â˜…'.repeat(booking.rating || 0);
+            const stars = '★'.repeat(booking.rating || 0);
             const ratingText = booking.rating ? ` (${booking.rating}/5)` : '';
             reviewSummary.append(summaryLabel);
-            reviewSummary.append(document.createTextNode(`${stars}${ratingText} Â· ${booking.feedback}`));
+            reviewSummary.append(document.createTextNode(`${stars}${ratingText} · ${booking.feedback}`));
           } else {
             reviewSummary.textContent = 'No review yet.';
           }
@@ -727,7 +727,7 @@
           reviewForm.className = 'booking-review-form';
           reviewForm.dataset.bookingIndex = String(index);
           reviewForm.hidden = true;
-          reviewForm.innerHTML = '<label>Rating<select name="rating" required><option value="">Select rating</option><option value="5">5 â˜…â˜…â˜…â˜…â˜…</option><option value="4">4 â˜…â˜…â˜…â˜…â˜†</option><option value="3">3 â˜…â˜…â˜…â˜†â˜†</option><option value="2">2 â˜…â˜…â˜†â˜†â˜†</option><option value="1">1 â˜…â˜†â˜†â˜†â˜†</option></select></label><label>Feedback<textarea name="feedback" maxlength="180" placeholder="Share your ride experience" required></textarea></label><button type="submit" class="booking-review-submit">Save review</button>';
+          reviewForm.innerHTML = '<label>Rating<select name="rating" required><option value="">Select rating</option><option value="5">5 ★★★★★</option><option value="4">4 ★★★★☆</option><option value="3">3 ★★★☆☆</option><option value="2">2 ★★☆☆☆</option><option value="1">1 ★☆☆☆☆</option></select></label><label>Feedback<textarea name="feedback" maxlength="180" placeholder="Share your ride experience" required></textarea></label><button type="submit" class="booking-review-submit">Save review</button>';
           const ratingInput = reviewForm.querySelector('select[name="rating"]');
           const feedbackInput = reviewForm.querySelector('textarea[name="feedback"]');
           if (ratingInput) ratingInput.value = booking.rating ? String(booking.rating) : '';
@@ -750,7 +750,7 @@
       bookingList.replaceChildren();
       const loadingMessage = document.createElement('div');
       loadingMessage.className = 'booking-empty';
-      loadingMessage.textContent = 'Loading your bookingsâ€¦';
+      loadingMessage.textContent = 'Loading your bookings…';
       bookingList.append(loadingMessage);
       try {
         await loadBookings();
@@ -826,7 +826,7 @@
       event.preventDefault();
       const submitButton = event.currentTarget.querySelector('[type="submit"]');
       submitButton.disabled = true;
-      submitButton.textContent = 'Preparing paymentâ€¦';
+      submitButton.textContent = 'Preparing payment…';
       try {
       const value = (id) => document.getElementById(id).value.trim();
       const from = value('offer-from');
@@ -879,13 +879,13 @@
         pendingRideDetails = null;
         await loadRides();
         showOfferScreen(false);
-        showToast('â‚¹39 payment confirmed. Your ride is published.');
+        showToast('✅ Payment successful! Your ride has been posted successfully.', 6000);
         event.target.reset();
         return;
       }
       pendingRideId = order.ride_id;
       pendingRideDetails = ride;
-      submitButton.textContent = 'Complete â‚¹39 paymentâ€¦';
+      submitButton.textContent = 'Complete ₹39 payment…';
       const paymentResult = await openRidePaymentCheckout(order);
       const savedRide = paymentResult;
       pendingRideId = null;
@@ -906,8 +906,8 @@
       card.querySelector('.from-place').textContent = from;
       card.querySelector('.to-place').textContent = to;
       card.querySelector('.ride-date').textContent = `Travel date: ${date}`;
-      card.querySelector('.ride-extras').textContent = `${carName} Â· ${carSeats}-seater Â· ${carNumber}${pickup ? ` Â· Pickup: ${pickup}` : ''} Â· ${bags} bags`;
-      card.querySelector('.ride-price').textContent = `â‚¹${price}`;
+      card.querySelector('.ride-extras').textContent = `${carName} · ${carSeats}-seater · ${carNumber}${pickup ? ` · Pickup: ${pickup}` : ''} · ${bags} bags`;
+      card.querySelector('.ride-price').textContent = `₹${price}`;
       card.querySelector('.ride-price').append(document.createElement('small'));
       card.querySelector('.ride-price small').textContent = ' / seat';
       card.querySelector('.seats').textContent = `${seats} seats available`;
@@ -928,13 +928,13 @@
       document.getElementById('empty').style.display = 'none';
       document.getElementById('offer-success').style.display = 'block';
       showOfferScreen(false);
-      showToast('â‚¹39 payment confirmed. Your ride is published.');
+      showToast('✅ Payment successful! Your ride has been posted successfully.', 6000);
       event.target.reset();
       } catch (error) {
         showToast(error.message);
       } finally {
         submitButton.disabled = false;
-        submitButton.textContent = 'Pay â‚¹39 & publish ride';
+        submitButton.textContent = 'Pay ₹39 & publish ride';
       }
     });
 
@@ -1014,7 +1014,7 @@
       const card = shareButton.closest('.ride-card');
       const text = [
         'Ride on CoRiderly',
-        `${card.querySelector('.ride-origin')?.textContent || ''} â†’ ${card.querySelector('.ride-destination')?.textContent || ''}`,
+        `${card.querySelector('.ride-origin')?.textContent || ''} → ${card.querySelector('.ride-destination')?.textContent || ''}`,
         `${card.querySelector('.ride-travel-date')?.textContent || ''} ${card.querySelector('.ride-departure-time')?.textContent || ''}`.trim(),
         `${card.querySelector('.ride-fare-amount')?.textContent || ''} per seat`,
         'Book your seat: https://otoridesindia-beep.github.io/coRiderly/'
@@ -1060,7 +1060,7 @@
         }
         await loadRides();
         await loadBookings();
-        showToast(existingBooking ? 'Booking cancelled.' : 'Seat booked â€” find it under My bookings.');
+        showToast(existingBooking ? 'Booking cancelled.' : 'Seat booked — find it under My bookings.');
       } catch (error) {
         showToast(error.message);
         if (button.isConnected) button.disabled = false;
