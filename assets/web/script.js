@@ -1,4 +1,4 @@
-const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+﻿const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     document.addEventListener('click', (event) => {
       const button = event.target.closest('button:not(:disabled)');
@@ -55,11 +55,11 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
     }
     updateProfileDisplay();
 
-    function showToast(message) {
+    function showToast(message, duration = 2600) {
       toast.textContent = message;
       toast.classList.add('show');
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
     }
 
     async function supabaseRequest(path, options = {}) {
@@ -130,11 +130,17 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
         const onCancel = (event) => {
           if (verifying) event.preventDefault();
         };
-        const onVerify = async () => {
+        let pollTimer = null;
+        const stopPolling = () => { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } };
+        const onVerify = async (clickEvent) => {
+          const silent = !clickEvent;
+          if (verifying || completed) return;
           verifying = true;
-          verifyPaymentButton.disabled = true;
-          closeButton.disabled = true;
-          verifyPaymentButton.textContent = 'Verifying payment…';
+          if (!silent) {
+            verifyPaymentButton.disabled = true;
+            closeButton.disabled = true;
+            verifyPaymentButton.textContent = 'Verifying paymentâ€¦';
+          }
           try {
             const result = await ridePaymentRequest({
               action: 'verify_payment',
@@ -145,12 +151,13 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
               throw new Error('Payment was verified, but the ride was not returned. Refresh your rides.');
             }
             completed = true;
+            stopPolling();
             verifyPaymentButton.removeEventListener('click', onVerify);
             paymentFrame.src = 'about:blank';
             paymentDialog.close();
             resolve(result.ride);
           } catch (error) {
-            showToast(error.message);
+            if (!silent || !/not been completed/i.test(error.message)) showToast(error.message);
             verifying = false;
             verifyPaymentButton.disabled = false;
             closeButton.disabled = false;
@@ -158,9 +165,11 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
           }
         };
 
+        paymentDialog.addEventListener('close', () => { stopPolling(); }, { once: true });
         paymentDialog.addEventListener('close', onClose, { once: true });
         paymentDialog.addEventListener('cancel', onCancel);
         verifyPaymentButton.addEventListener('click', onVerify);
+        pollTimer = setInterval(() => onVerify(), 4000);
       });
     }
 
@@ -201,7 +210,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
           <div class="ride-driver-copy">
             <strong class="ride-driver-name"></strong>
             <span class="ride-driver-caption"></span>
-            <button class="ride-feedback-link" type="button">★ View rider feedback</button>
+            <button class="ride-feedback-link" type="button">â˜… View rider feedback</button>
           </div>
         </div>
         <div class="ride-card-footer">
@@ -240,7 +249,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       card.querySelector('.ride-driver-avatar').textContent = initials;
       card.querySelector('.ride-driver-name').textContent = name;
       card.querySelector('.ride-driver-caption').textContent = isMine ? 'Your ride' : 'CoRiderly member';
-      card.querySelector('.ride-fare-amount').textContent = `₹${ride.price_per_seat}`;
+      card.querySelector('.ride-fare-amount').textContent = `â‚¹${ride.price_per_seat}`;
       card.querySelector('.ride-seats-available').textContent =
         `${ride.available_seats} ${ride.available_seats === 1 ? 'seat' : 'seats'} available`;
       const bookButton = card.querySelector('.ride-owner-button');
@@ -286,7 +295,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       const driverName = card.querySelector('.ride-driver-name')?.textContent || 'this driver';
       driverReviewsDialog.dataset.driverId = driverId;
       document.getElementById('driver-reviews-title').textContent = `Feedback for ${driverName}`;
-      driverReviewsSummary.textContent = 'Loading rider feedback…';
+      driverReviewsSummary.textContent = 'Loading rider feedbackâ€¦';
       driverReviewsList.replaceChildren();
       driverReviewsDialog.showModal();
       try {
@@ -295,7 +304,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
         );
         if (driverReviewsDialog.dataset.driverId !== driverId) return;
         driverReviewsSummary.textContent = reviews.length
-          ? `${(reviews.reduce((total, review) => total + review.rating, 0) / reviews.length).toFixed(1)} ★ average · ${reviews.length === 50 ? 'latest 50 reviews' : `${reviews.length} ${reviews.length === 1 ? 'review' : 'reviews'}`}`
+          ? `${(reviews.reduce((total, review) => total + review.rating, 0) / reviews.length).toFixed(1)} â˜… average Â· ${reviews.length === 50 ? 'latest 50 reviews' : `${reviews.length} ${reviews.length === 1 ? 'review' : 'reviews'}`}`
           : '';
         if (!reviews.length) {
           const empty = document.createElement('div');
@@ -308,7 +317,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
           const item = document.createElement('article');
           item.className = 'driver-review-item';
           const rating = document.createElement('strong');
-          rating.textContent = `${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)} (${review.rating}/5)`;
+          rating.textContent = `${'â˜…'.repeat(review.rating)}${'â˜†'.repeat(5 - review.rating)} (${review.rating}/5)`;
           const feedback = document.createElement('p');
           feedback.textContent = review.feedback;
           const date = document.createElement('time');
@@ -491,7 +500,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       const pin = authPin.value;
       const submitButton = event.currentTarget.querySelector('[type="submit"]');
       submitButton.disabled = true;
-      submitButton.textContent = authMode === 'register' ? 'Creating account…' : 'Logging in…';
+      submitButton.textContent = authMode === 'register' ? 'Creating accountâ€¦' : 'Logging inâ€¦';
       try {
         const registering = authMode === 'register';
         const url = `${supabaseUrl}/functions/v1/phone-pin-auth`;
@@ -643,9 +652,9 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
           status: row.status,
           travelDate: ride.travel_date,
           card,
-          route: `${ride.origin} → ${ride.destination}`,
+          route: `${ride.origin} â†’ ${ride.destination}`,
           time: ride.departure_time,
-          price: `₹${ride.price_per_seat}`,
+          price: `â‚¹${ride.price_per_seat}`,
           reviewId: review?.id || null,
           rating: review?.rating || null,
           feedback: review?.feedback || ''
@@ -682,16 +691,16 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
           const route = document.createElement('strong');
           route.textContent = booking.route;
           const details = document.createElement('span');
-          details.textContent = `${booking.time} · ${booking.price}`;
+          details.textContent = `${booking.time} Â· ${booking.price}`;
           const reviewSummary = document.createElement('p');
           reviewSummary.className = 'booking-review-summary';
           if (booking.feedback) {
             const summaryLabel = document.createElement('strong');
             summaryLabel.textContent = 'Review: ';
-            const stars = '★'.repeat(booking.rating || 0);
+            const stars = 'â˜…'.repeat(booking.rating || 0);
             const ratingText = booking.rating ? ` (${booking.rating}/5)` : '';
             reviewSummary.append(summaryLabel);
-            reviewSummary.append(document.createTextNode(`${stars}${ratingText} · ${booking.feedback}`));
+            reviewSummary.append(document.createTextNode(`${stars}${ratingText} Â· ${booking.feedback}`));
           } else {
             reviewSummary.textContent = 'No review yet.';
           }
@@ -711,7 +720,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
           reviewForm.className = 'booking-review-form';
           reviewForm.dataset.bookingIndex = String(index);
           reviewForm.hidden = true;
-          reviewForm.innerHTML = '<label>Rating<select name="rating" required><option value="">Select rating</option><option value="5">5 ★★★★★</option><option value="4">4 ★★★★☆</option><option value="3">3 ★★★☆☆</option><option value="2">2 ★★☆☆☆</option><option value="1">1 ★☆☆☆☆</option></select></label><label>Feedback<textarea name="feedback" maxlength="180" placeholder="Share your ride experience" required></textarea></label><button type="submit" class="booking-review-submit">Save review</button>';
+          reviewForm.innerHTML = '<label>Rating<select name="rating" required><option value="">Select rating</option><option value="5">5 â˜…â˜…â˜…â˜…â˜…</option><option value="4">4 â˜…â˜…â˜…â˜…â˜†</option><option value="3">3 â˜…â˜…â˜…â˜†â˜†</option><option value="2">2 â˜…â˜…â˜†â˜†â˜†</option><option value="1">1 â˜…â˜†â˜†â˜†â˜†</option></select></label><label>Feedback<textarea name="feedback" maxlength="180" placeholder="Share your ride experience" required></textarea></label><button type="submit" class="booking-review-submit">Save review</button>';
           const ratingInput = reviewForm.querySelector('select[name="rating"]');
           const feedbackInput = reviewForm.querySelector('textarea[name="feedback"]');
           if (ratingInput) ratingInput.value = booking.rating ? String(booking.rating) : '';
@@ -734,7 +743,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       bookingList.replaceChildren();
       const loadingMessage = document.createElement('div');
       loadingMessage.className = 'booking-empty';
-      loadingMessage.textContent = 'Loading your bookings…';
+      loadingMessage.textContent = 'Loading your bookingsâ€¦';
       bookingList.append(loadingMessage);
       try {
         await loadBookings();
@@ -810,7 +819,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       event.preventDefault();
       const submitButton = event.currentTarget.querySelector('[type="submit"]');
       submitButton.disabled = true;
-      submitButton.textContent = 'Preparing payment…';
+      submitButton.textContent = 'Preparing paymentâ€¦';
       try {
       const value = (id) => document.getElementById(id).value.trim();
       const from = value('offer-from');
@@ -863,13 +872,13 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
         pendingRideDetails = null;
         await loadRides();
         showOfferScreen(false);
-        showToast('₹39 payment confirmed. Your ride is published.');
+        showToast('â‚¹39 payment confirmed. Your ride is published.');
         event.target.reset();
         return;
       }
       pendingRideId = order.ride_id;
       pendingRideDetails = ride;
-      submitButton.textContent = 'Complete ₹39 payment…';
+      submitButton.textContent = 'Complete â‚¹39 paymentâ€¦';
       const paymentResult = await openRidePaymentCheckout(order);
       const savedRide = paymentResult;
       pendingRideId = null;
@@ -890,8 +899,8 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       card.querySelector('.from-place').textContent = from;
       card.querySelector('.to-place').textContent = to;
       card.querySelector('.ride-date').textContent = `Travel date: ${date}`;
-      card.querySelector('.ride-extras').textContent = `${carName} · ${carSeats}-seater · ${carNumber}${pickup ? ` · Pickup: ${pickup}` : ''} · ${bags} bags`;
-      card.querySelector('.ride-price').textContent = `₹${price}`;
+      card.querySelector('.ride-extras').textContent = `${carName} Â· ${carSeats}-seater Â· ${carNumber}${pickup ? ` Â· Pickup: ${pickup}` : ''} Â· ${bags} bags`;
+      card.querySelector('.ride-price').textContent = `â‚¹${price}`;
       card.querySelector('.ride-price').append(document.createElement('small'));
       card.querySelector('.ride-price small').textContent = ' / seat';
       card.querySelector('.seats').textContent = `${seats} seats available`;
@@ -912,13 +921,13 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       document.getElementById('empty').style.display = 'none';
       document.getElementById('offer-success').style.display = 'block';
       showOfferScreen(false);
-      showToast('₹39 payment confirmed. Your ride is published.');
+      showToast('â‚¹39 payment confirmed. Your ride is published.');
       event.target.reset();
       } catch (error) {
         showToast(error.message);
       } finally {
         submitButton.disabled = false;
-        submitButton.textContent = 'Pay ₹39 & publish ride';
+        submitButton.textContent = 'Pay â‚¹39 & publish ride';
       }
     });
 
@@ -928,7 +937,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       const card = shareButton.closest('.ride-card');
       const text = [
         'Ride on CoRiderly',
-        `${card.querySelector('.ride-origin')?.textContent || ''} → ${card.querySelector('.ride-destination')?.textContent || ''}`,
+        `${card.querySelector('.ride-origin')?.textContent || ''} â†’ ${card.querySelector('.ride-destination')?.textContent || ''}`,
         `${card.querySelector('.ride-travel-date')?.textContent || ''} ${card.querySelector('.ride-departure-time')?.textContent || ''}`.trim(),
         `${card.querySelector('.ride-fare-amount')?.textContent || ''} per seat`,
         'Book your seat: https://otoridesindia-beep.github.io/coRiderly/'
@@ -974,7 +983,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
         }
         await loadRides();
         await loadBookings();
-        showToast(existingBooking ? 'Booking cancelled.' : 'Seat booked — find it under My bookings.');
+        showToast(existingBooking ? 'Booking cancelled.' : 'Seat booked â€” find it under My bookings.');
       } catch (error) {
         showToast(error.message);
         if (button.isConnected) button.disabled = false;
