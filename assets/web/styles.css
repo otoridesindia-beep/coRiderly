@@ -680,9 +680,19 @@
       box-shadow: none;
     }
     #driver-reviews-dialog { width: min(420px, calc(100% - 40px)); max-height: 78vh; }
-    .ride-manage-actions { display: flex; gap: 8px; padding: 0 16px 14px; }
-    .ride-manage-actions button { flex: 1; min-height: 38px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: inherit; font: inherit; font-weight: 700; cursor: pointer; }
-    .ride-manage-actions .ride-delete-button { color: #d64545; border-color: rgba(214, 69, 69, .5); }
+    .profile-rides { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
+    .profile-rides-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 5px 10px; margin-bottom: 12px; }
+    .profile-rides-heading h3 { margin: 0; font-size: 16px; }
+    .profile-rides-heading span { color: var(--muted); font-size: 12px; }
+    .profile-rides-list { display: grid; gap: 10px; }
+    .profile-rides-empty { padding: 14px; border: 1px dashed var(--line); border-radius: 11px; color: var(--muted); font-size: 13px; text-align: center; }
+    .profile-ride-item { display: grid; gap: 12px; padding: 13px; border: 1px solid var(--line); border-radius: 12px; }
+    .profile-ride-details { display: grid; gap: 4px; min-width: 0; }
+    .profile-ride-details strong { overflow-wrap: anywhere; font-size: 14px; }
+    .profile-ride-details p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .profile-ride-actions { display: flex; gap: 8px; }
+    .profile-ride-actions button { flex: 1; min-height: 38px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: inherit; font: inherit; font-weight: 700; cursor: pointer; }
+    .profile-ride-actions .ride-delete-button { color: #d64545; border-color: rgba(214, 69, 69, .5); }
     #payment-dialog { width: 100vw; max-width: 100vw; height: 100vh; height: 100dvh; max-height: 100dvh; margin: 0; padding: 0; border: 0; border-radius: 0; }
     #payment-dialog .dialog-content { display: flex; height: 100%; box-sizing: border-box; flex-direction: column; padding: 12px; border-radius: 0; }
     #payment-frame { width: 100%; min-height: 0; flex: 1; border: 1px solid var(--line); border-radius: 10px; background: white; }

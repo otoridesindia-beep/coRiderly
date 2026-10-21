@@ -16,6 +16,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
     });
 
     const rideList = document.getElementById('ride-list');
+    const profileRidesList = document.getElementById('profile-rides-list');
     let cards = [...rideList.querySelectorAll('.ride-card')];
     const toast = document.getElementById('toast');
     let toastTimer;
@@ -256,10 +257,6 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       bookButton.textContent = isMine ? 'Share' : 'Book seat';
       if (isMine) {
         bookButton.classList.add('ride-share-button');
-        const manage = document.createElement('div');
-        manage.className = 'ride-manage-actions';
-        manage.innerHTML = '<button class="ride-edit-button" type="button">Edit</button><button class="ride-delete-button" type="button">Delete</button>';
-        card.querySelector('.ride-card-footer').after(manage);
         card._ride = ride;
       }
       if (phone) {
@@ -283,8 +280,43 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       );
       rideList.replaceChildren(...rides.map(renderRideCard));
       cards = [...rideList.querySelectorAll('.ride-card')];
+      const myRides = rides.filter((ride) => ride.driver_id === currentUserId);
+      if (myRides.length) {
+        profileRidesList.replaceChildren(...myRides.map(renderProfileRide));
+      } else {
+        const empty = document.createElement('div');
+        empty.className = 'profile-rides-empty';
+        empty.textContent = 'Your published rides will appear here.';
+        profileRidesList.replaceChildren(empty);
+      }
       document.getElementById('ride-count').textContent = `${cards.length} ${cards.length === 1 ? 'ride' : 'rides'}`;
       document.getElementById('empty').style.display = cards.length ? 'none' : 'block';
+    }
+
+    function renderProfileRide(ride) {
+      const item = document.createElement('article');
+      item.className = 'profile-ride-item';
+      const details = document.createElement('div');
+      details.className = 'profile-ride-details';
+      const route = document.createElement('strong');
+      route.textContent = `${ride.origin} → ${ride.destination}`;
+      const timing = document.createElement('p');
+      const date = new Date(`${ride.travel_date}T00:00:00`).toLocaleDateString([], {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+      timing.textContent = `${date} · ${String(ride.departure_time).slice(0, 5)} · ₹${ride.price_per_seat} per seat`;
+      const seats = document.createElement('p');
+      seats.textContent = `${ride.available_seats} ${ride.available_seats === 1 ? 'seat' : 'seats'} available`;
+      details.append(route, timing, seats);
+
+      const actions = document.createElement('div');
+      actions.className = 'profile-ride-actions';
+      actions.innerHTML = '<button class="ride-edit-button" type="button">Edit</button><button class="ride-delete-button" type="button">Delete</button>';
+      item.append(details, actions);
+      item._ride = ride;
+      return item;
     }
 
     const driverReviewsDialog = document.getElementById('driver-reviews-dialog');
@@ -942,12 +974,12 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
     const editRideForm = document.getElementById('edit-ride-form');
     let editingRideId = null;
 
-    rideList.addEventListener('click', async (event) => {
+    profileRidesList.addEventListener('click', async (event) => {
       const editButton = event.target.closest('.ride-edit-button');
       const deleteButton = event.target.closest('.ride-delete-button');
       if (!editButton && !deleteButton) return;
-      const card = event.target.closest('.ride-card');
-      const ride = card?._ride;
+      const item = event.target.closest('.profile-ride-item');
+      const ride = item?._ride;
       if (!ride) return;
       if (editButton) {
         editingRideId = ride.id;
