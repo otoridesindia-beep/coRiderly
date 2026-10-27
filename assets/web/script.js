@@ -110,8 +110,14 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
     }
 
     async function openRidePaymentCheckout(order) {
-      paymentFrame.src = order.redirect_url;
       paymentDialog.showModal();
+      const nativeCheckout = window.PineLabsCheckout;
+      if (nativeCheckout && typeof nativeCheckout.postMessage === 'function') {
+        paymentFrame.src = 'about:blank';
+        nativeCheckout.postMessage(order.redirect_url);
+      } else {
+        paymentFrame.src = order.redirect_url;
+      }
 
       return new Promise((resolve, reject) => {
         let completed = false;
@@ -120,6 +126,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
         const onClose = () => {
           verifyPaymentButton.removeEventListener('click', onVerify);
           paymentDialog.removeEventListener('cancel', onCancel);
+          document.removeEventListener('nativeappresume', onNativeResume);
           paymentFrame.src = 'about:blank';
           verifyPaymentButton.disabled = false;
           verifyPaymentButton.textContent = 'Verify payment';
@@ -128,6 +135,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
             reject(new Error('Payment cancelled. Your ride has not been published.'));
           }
         };
+        const onNativeResume = () => onVerify();
         const onCancel = (event) => {
           if (verifying) event.preventDefault();
         };
@@ -169,6 +177,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
         paymentDialog.addEventListener('close', () => { stopPolling(); }, { once: true });
         paymentDialog.addEventListener('close', onClose, { once: true });
         paymentDialog.addEventListener('cancel', onCancel);
+        document.addEventListener('nativeappresume', onNativeResume);
         verifyPaymentButton.addEventListener('click', onVerify);
         pollTimer = setInterval(() => onVerify(), 4000);
       });

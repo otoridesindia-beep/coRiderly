@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -16,6 +17,25 @@ const line = Color(0xFFECEAF2);
 
 String _formatDate(DateTime date) =>
     '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+
+bool isPineLabsCheckoutUrl(String value) {
+  final uri = Uri.tryParse(value);
+  if (uri == null ||
+      uri.scheme != 'https' ||
+      uri.userInfo.isNotEmpty ||
+      (uri.hasPort && uri.port != 443)) {
+    return false;
+  }
+  const allowedDomains = [
+    'pinepg.in',
+    'pluralpay.in',
+    'pluralonline.com',
+    'pinelabs.com',
+  ];
+  return allowedDomains.any(
+    (domain) => uri.host == domain || uri.host.endsWith('.$domain'),
+  );
+}
 
 class AppConfig {
   static const projectUrl = String.fromEnvironment(
@@ -59,16 +79,25 @@ class RidePage extends StatefulWidget {
   State<RidePage> createState() => _RidePageState();
 }
 
-class _RidePageState extends State<RidePage> {
+class _RidePageState extends State<RidePage> with WidgetsBindingObserver {
   late final WebViewController controller;
+  bool _pageLoaded = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..addJavaScriptChannel(
+        'PineLabsCheckout',
+        onMessageReceived: (message) {
+          unawaited(_openPineLabsCheckout(message.message));
+        },
+      )
       ..setNavigationDelegate(
         NavigationDelegate(
+          onPageFinished: (_) => _pageLoaded = true,
           onNavigationRequest: (request) {
             final uri = Uri.tryParse(request.url);
             if (uri == null) return NavigationDecision.prevent;
@@ -106,6 +135,37 @@ class _RidePageState extends State<RidePage> {
       ..loadFlutterAsset('assets/web/index.html');
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _pageLoaded) {
+      unawaited(
+        controller.runJavaScript(
+          "window.dispatchEvent(new Event('nativeappresume'))",
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  Future<void> _openPineLabsCheckout(String value) async {
+    if (!isPineLabsCheckoutUrl(value)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('The Pine Labs checkout link is invalid.'),
+          ),
+        );
+      }
+      return;
+    }
+    await _openExternalUri(Uri.parse(value));
+  }
+
   Future<void> _openExternalUri(Uri uri) async {
     try {
       final launched = await launchUrl(
@@ -121,9 +181,17 @@ class _RidePageState extends State<RidePage> {
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Could not open link: $error')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              error is PlatformException &&
+                      error.code == 'ACTIVITY_NOT_FOUND' &&
+                      uri.scheme == 'upi'
+                  ? 'No UPI app could open the Pine Labs checkout. Install or enable a UPI app, then try again.'
+                  : 'Could not open link: $error',
+            ),
+          ),
+        );
       }
     }
   }

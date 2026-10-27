@@ -20,6 +20,8 @@ void main() {
     expect(script, contains('/functions/v1/ride-payment'));
     expect(script, contains("action: 'create_order'"));
     expect(script, contains("action: 'verify_payment'"));
+    expect(script, contains('window.PineLabsCheckout'));
+    expect(script, contains("document.addEventListener('nativeappresume'"));
     expect(script, contains('order.provider_order_id'));
     expect(html, contains('Pine Labs secure checkout'));
     expect(script, contains('action: \'verify_payment\''));
@@ -43,6 +45,20 @@ void main() {
     expect(script, contains('function signOut()'));
     expect(script, contains("document.getElementById('bottom-my-rides')"));
     expect(styles, contains('.bottom-nav-tab.active'));
+  });
+
+  test('Pine Labs checkout links are restricted to HTTPS provider domains', () {
+    expect(
+      isPineLabsCheckoutUrl('https://checkout.pluralonline.com/order/123'),
+      isTrue,
+    );
+    expect(isPineLabsCheckoutUrl('https://api.pluralpay.in/checkout'), isTrue);
+    expect(isPineLabsCheckoutUrl('http://checkout.pluralonline.com'), isFalse);
+    expect(
+      isPineLabsCheckoutUrl('https://pluralonline.com.attacker.test'),
+      isFalse,
+    );
+    expect(isPineLabsCheckoutUrl('upi://pay?pa=merchant@upi'), isFalse);
   });
 
   testWidgets('profile edit returns the updated name', (
