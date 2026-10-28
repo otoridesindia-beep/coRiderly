@@ -18,6 +18,8 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
     const rideList = document.getElementById('ride-list');
     const profileRidesList = document.getElementById('profile-rides-list');
     let cards = [...rideList.querySelectorAll('.ride-card')];
+    const rideExpirationTimers = new Set();
+    const rideVisibilityMs = 24 * 60 * 60 * 1000;
     const toast = document.getElementById('toast');
     let toastTimer;
     const supabaseUrl = 'https://ecefjyoaqyxdjyjsmpyd.supabase.co';
@@ -61,6 +63,53 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       toast.classList.add('show');
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
+    }
+
+    function isRideExpired(ride, now = Date.now()) {
+      const postedAt = Date.parse(ride.created_at);
+      return Number.isFinite(postedAt) && now - postedAt >= rideVisibilityMs;
+    }
+
+    function removeExpiredRide(rideId) {
+      cards = cards.filter((card) => {
+        if (card.dataset.rideId !== rideId) return true;
+        card.remove();
+        return false;
+      });
+
+      profileRidesList.querySelectorAll('.profile-ride-item').forEach((item) => {
+        if (item.dataset.rideId === rideId) item.remove();
+      });
+      if (!profileRidesList.querySelector('.profile-ride-item')) {
+        const empty = document.createElement('div');
+        empty.className = 'profile-rides-empty';
+        empty.textContent = 'Your published rides will appear here.';
+        profileRidesList.replaceChildren(empty);
+      }
+
+      const bookingIndex = bookings.findIndex((booking) => booking.rideId === rideId);
+      if (bookingIndex !== -1) {
+        bookings.splice(bookingIndex, 1);
+        renderBookingList();
+      }
+
+      const visibleCount = cards.filter((card) => card.style.display !== 'none').length;
+      document.getElementById('ride-count').textContent =
+        `${visibleCount} ${visibleCount === 1 ? 'ride' : 'rides'}`;
+      document.getElementById('empty').style.display = visibleCount ? 'none' : 'block';
+    }
+
+    function scheduleRideExpiration(ride) {
+      if (!ride.id || rideExpirationTimers.has(ride.id)) return;
+      const postedAt = Date.parse(ride.created_at);
+      if (!Number.isFinite(postedAt)) return;
+
+      const expiresIn = postedAt + rideVisibilityMs - Date.now();
+      const timer = window.setTimeout(() => {
+        rideExpirationTimers.delete(ride.id);
+        removeExpiredRide(ride.id);
+      }, Math.max(0, expiresIn));
+      rideExpirationTimers.add(ride.id);
     }
 
     async function supabaseRequest(path, options = {}) {
@@ -107,6 +156,26 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
         throw new Error(result?.message || 'Could not prepare or verify the ride payment.');
       }
       return result;
+    }
+
+    function formatPostedTime(createdAt) {
+      const postedAt = Date.parse(createdAt);
+      if (!Number.isFinite(postedAt)) return 'Time unavailable';
+
+      const differenceSeconds = (postedAt - Date.now()) / 1000;
+      if (Math.abs(differenceSeconds) < 60) return 'Just now';
+
+      const units = [
+        ['year', 31536000],
+        ['month', 2592000],
+        ['week', 604800],
+        ['day', 86400],
+        ['hour', 3600],
+        ['minute', 60]
+      ];
+      const formatter = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+      const [unit, seconds] = units.find(([, unitSeconds]) => Math.abs(differenceSeconds) >= unitSeconds);
+      return formatter.format(Math.round(differenceSeconds / seconds), unit);
     }
 
     async function openRidePaymentCheckout(order) {
@@ -245,9 +314,15 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       card.dataset.price = String(ride.price_per_seat);
       card.dataset.travelDate = ride.travel_date;
       card.dataset.time = String(hours + minutes / 60);
+      scheduleRideExpiration(ride);
       card.querySelector('.ride-travel-date').textContent = new Date(`${ride.travel_date}T00:00:00`)
         .toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
-      card.querySelector('.ride-posted strong').textContent = 'Just now';
+      const postedTime = card.querySelector('.ride-posted strong');
+      postedTime.textContent = formatPostedTime(ride.created_at);
+      if (ride.created_at) {
+        const postedAt = new Date(ride.created_at);
+        if (!Number.isNaN(postedAt.getTime())) postedTime.title = postedAt.toLocaleString();
+      }
       card.querySelector('.ride-departure-time').textContent =
         `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
       card.querySelector('.ride-seat-count').textContent =
@@ -284,9 +359,10 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
     }
 
     async function loadRides() {
-      const rides = await supabaseRequest(
+      const loadedRides = await supabaseRequest(
         'rest/v1/rides?select=*,driver:profiles!rides_driver_id_fkey(full_name,phone)&status=eq.open&order=travel_date.asc,departure_time.asc'
       );
+      const rides = loadedRides.filter((ride) => !isRideExpired(ride));
       rideList.replaceChildren(...rides.map(renderRideCard));
       cards = [...rideList.querySelectorAll('.ride-card')];
       const myRides = rides.filter((ride) => ride.driver_id === currentUserId);
@@ -308,6 +384,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       const details = document.createElement('div');
       details.className = 'profile-ride-details';
       const route = document.createElement('strong');
+      item.dataset.rideId = ride.id;
       route.textContent = `${ride.origin} → ${ride.destination}`;
       const timing = document.createElement('p');
       const date = new Date(`${ride.travel_date}T00:00:00`).toLocaleDateString([], {
@@ -684,13 +761,13 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
     }
     async function loadBookings() {
       const [rows, reviews] = await Promise.all([
-        supabaseRequest(`rest/v1/bookings?select=id,ride_id,seats,status,created_at,ride:rides(id,driver_id,origin,destination,travel_date,departure_time,price_per_seat)&rider_id=eq.${encodeURIComponent(currentUserId)}&status=in.(confirmed,completed)&order=created_at.desc`),
+        supabaseRequest(`rest/v1/bookings?select=id,ride_id,seats,status,created_at,ride:rides(id,driver_id,origin,destination,travel_date,departure_time,price_per_seat,created_at)&rider_id=eq.${encodeURIComponent(currentUserId)}&status=in.(confirmed,completed)&order=created_at.desc`),
         supabaseRequest(`rest/v1/driver_reviews?select=id,ride_id,rating,feedback&rider_id=eq.${encodeURIComponent(currentUserId)}`)
       ]);
       const reviewByRide = new Map(reviews.map((review) => [review.ride_id, review]));
       const loadedBookings = rows.flatMap((row) => {
         const ride = Array.isArray(row.ride) ? row.ride[0] : row.ride;
-        if (!ride) return [];
+        if (!ride || isRideExpired(ride)) return [];
         const review = reviewByRide.get(ride.id);
         const card = cards.find((rideCard) => rideCard.dataset.rideId === ride.id) || null;
         return [{
@@ -960,7 +1037,6 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       card.querySelector('.call-btn').setAttribute('aria-label', contact.getAttribute('aria-label'));
       rideList.prepend(renderRideCard({
         ...savedRide,
-        created_at: new Date().toISOString(),
         driver: { full_name: profileData.name, phone }
       }));
       cards = [...rideList.querySelectorAll('.ride-card')];
