@@ -1210,3 +1210,30 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
     applyTheme(next);
   });
 })();
+
+(function () {
+  var box = document.getElementById('visitor-count');
+  var number = document.getElementById('visitor-count-number');
+  if (!box || !number) return;
+  var visitorId;
+  try {
+    visitorId = localStorage.getItem('coriderly-visitor-id');
+    if (!visitorId) {
+      visitorId = crypto.randomUUID();
+      localStorage.setItem('coriderly-visitor-id', visitorId);
+    }
+  } catch (err) {
+    return;
+  }
+  fetch(supabaseUrl + '/rest/v1/rpc/record_visit', {
+    method: 'POST',
+    headers: { apikey: supabaseAnonKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_visitor_id: visitorId })
+  }).then(function (response) {
+    return response.ok ? response.json() : null;
+  }).then(function (count) {
+    if (typeof count !== 'number') return;
+    number.textContent = count.toLocaleString('en-IN');
+    box.hidden = false;
+  }).catch(function () {});
+})();
