@@ -490,7 +490,7 @@
     .auth-back-link:hover { color: var(--purple-dark); }
     @media (max-height: 700px) {
       .welcome-brand-card { min-height: 9rem; }
-      .welcome-logo { width: min(100%, 9.5rem); }
+      .welcome-logo { width: min(100%, 12rem); }
       .welcome-intro-copy { margin-bottom: 1rem; }
       .welcome-actions { padding-top: 1rem; }
     }
