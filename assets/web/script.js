@@ -1215,6 +1215,8 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
   var box = document.getElementById('visitor-count');
   var number = document.getElementById('visitor-count-number');
   if (!box || !number) return;
+  var usersNumber = document.getElementById('user-count-number');
+  var mainApp = document.getElementById('main-app');
   var visitorId;
   try {
     visitorId = localStorage.getItem('coriderly-visitor-id');
@@ -1225,15 +1227,23 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
   } catch (err) {
     return;
   }
-  fetch(supabaseUrl + '/rest/v1/rpc/record_visit', {
-    method: 'POST',
-    headers: { apikey: supabaseAnonKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ p_visitor_id: visitorId })
-  }).then(function (response) {
-    return response.ok ? response.json() : null;
-  }).then(function (count) {
-    if (typeof count !== 'number') return;
-    number.textContent = count.toLocaleString('en-IN');
-    box.hidden = false;
-  }).catch(function () {});
+  function refreshStats() {
+    fetch(supabaseUrl + '/rest/v1/rpc/record_visit_stats', {
+      method: 'POST',
+      headers: { apikey: supabaseAnonKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_visitor_id: visitorId })
+    }).then(function (response) {
+      return response.ok ? response.json() : null;
+    }).then(function (stats) {
+      if (!stats || typeof stats.visitors !== 'number') return;
+      number.textContent = stats.visitors.toLocaleString('en-IN');
+      if (usersNumber && typeof stats.users === 'number') usersNumber.textContent = stats.users.toLocaleString('en-IN');
+      box.hidden = false;
+    }).catch(function () {});
+  }
+  refreshStats();
+  if (mainApp) {
+    new MutationObserver(function () { if (!mainApp.hidden) refreshStats(); })
+      .observe(mainApp, { attributes: true, attributeFilter: ['hidden'] });
+  }
 })();
