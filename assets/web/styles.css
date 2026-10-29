@@ -974,6 +974,9 @@
     .visitor-count svg { width: 18px; height: 18px; color: var(--purple); }
     .visitor-count strong { color: var(--ink); font-size: 15px; }
     html[data-theme="dark"] .visitor-count { background: #100d20; }
+    .time-12h { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; }
+    .time-12h select { width:100%; min-width:0; height:46px; padding:0 8px; border:1px solid #e8e6ee; border-radius:10px; color:var(--ink); background:#fff; }
+    html[data-theme="dark"] .time-12h select { border-color:var(--line); background-color:#0e0b1d; color-scheme:dark; }
     select.sort {
       flex: 0 0 auto; width: auto; max-width: none; min-height: 36px; height: 36px;
       padding: 0 30px 0 12px; border-radius: 999px; font-weight: 600; cursor: pointer;

@@ -158,6 +158,12 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       return result;
     }
 
+    function format12h(time) {
+      const [h, m] = String(time).split(':').map(Number);
+      if (Number.isNaN(h)) return String(time);
+      return `${h % 12 || 12}:${String(m || 0).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+    }
+
     function formatPostedTime(createdAt) {
       const postedAt = Date.parse(createdAt);
       if (!Number.isFinite(postedAt)) return 'Time unavailable';
@@ -324,7 +330,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
         if (!Number.isNaN(postedAt.getTime())) postedTime.title = postedAt.toLocaleString();
       }
       card.querySelector('.ride-departure-time').textContent =
-        `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        format12h(`${hours}:${minutes}`);
       card.querySelector('.ride-seat-count').textContent =
         `${ride.available_seats} ${ride.available_seats === 1 ? 'seat' : 'seats'}`;
       card.querySelector('.ride-origin').textContent = ride.origin;
@@ -392,7 +398,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
         month: 'short',
         year: 'numeric'
       });
-      timing.textContent = `${date} · ${String(ride.departure_time).slice(0, 5)} · ₹${ride.price_per_seat} per seat`;
+      timing.textContent = `${date} · ${format12h(String(ride.departure_time).slice(0, 5))} · ₹${ride.price_per_seat} per seat`;
       const seats = document.createElement('p');
       seats.textContent = `${ride.available_seats} ${ride.available_seats === 1 ? 'seat' : 'seats'} available`;
       details.append(route, timing, seats);
@@ -824,7 +830,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
           const route = document.createElement('strong');
           route.textContent = booking.route;
           const details = document.createElement('span');
-          details.textContent = `${booking.time} · ${booking.price}`;
+          details.textContent = `${format12h(String(booking.time).slice(0, 5))} · ${booking.price}`;
           const reviewSummary = document.createElement('p');
           reviewSummary.className = 'booking-review-summary';
           if (booking.feedback) {
@@ -1246,4 +1252,54 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
     new MutationObserver(function () { if (!mainApp.hidden) refreshStats(); })
       .observe(mainApp, { attributes: true, attributeFilter: ['hidden'] });
   }
+})();
+
+// 12-hour AM/PM time picker; the hidden time input keeps the 24h HH:MM value.
+(function () {
+  document.querySelectorAll('input[type="time"]').forEach(function (input) {
+    const wrap = document.createElement('div');
+    wrap.className = 'time-12h';
+    const make = (label, options) => {
+      const select = document.createElement('select');
+      select.required = input.required;
+      select.setAttribute('aria-label', label);
+      select.innerHTML = '<option value="">' + label + '</option>' +
+        options.map((o) => '<option value="' + o + '">' + o + '</option>').join('');
+      wrap.appendChild(select);
+      return select;
+    };
+    const hourSel = make('Hr', Array.from({ length: 12 }, (_, i) => String(i + 1)));
+    const minSel = make('Min', Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')));
+    const ampmSel = make('AM/PM', ['AM', 'PM']);
+    const proto = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+
+    function sync() {
+      let v = '';
+      if (hourSel.value && minSel.value && ampmSel.value) {
+        const h = (Number(hourSel.value) % 12) + (ampmSel.value === 'PM' ? 12 : 0);
+        v = String(h).padStart(2, '0') + ':' + minSel.value;
+      }
+      proto.set.call(input, v);
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    function setFrom(v) {
+      const m = /^(\d{1,2}):(\d{2})/.exec(v || '');
+      if (!m) { hourSel.value = ''; minSel.value = ''; ampmSel.value = ''; proto.set.call(input, ''); return; }
+      const h = Number(m[1]);
+      hourSel.value = String(h % 12 || 12);
+      minSel.value = m[2];
+      ampmSel.value = h < 12 ? 'AM' : 'PM';
+      proto.set.call(input, m[1].padStart(2, '0') + ':' + m[2]);
+    }
+    [hourSel, minSel, ampmSel].forEach((s) => s.addEventListener('change', sync));
+    Object.defineProperty(input, 'value', {
+      get() { return proto.get.call(input); },
+      set(v) { setFrom(v); }
+    });
+    input.required = false;
+    input.hidden = true;
+    input.style.display = 'none';
+    input.parentNode.appendChild(wrap);
+    if (input.form) input.form.addEventListener('reset', () => setTimeout(() => setFrom(''), 0));
+  });
 })();
