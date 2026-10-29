@@ -974,6 +974,15 @@
     .visitor-count svg { width: 18px; height: 18px; color: var(--purple); }
     .visitor-count strong { color: var(--ink); font-size: 15px; }
     html[data-theme="dark"] .visitor-count { background: #100d20; }
+    select.sort {
+      flex: 0 0 auto; width: auto; max-width: none; min-height: 36px; height: 36px;
+      padding: 0 30px 0 12px; border-radius: 999px; font-weight: 600; cursor: pointer;
+      -webkit-appearance: none; appearance: none;
+      background-color: #fff;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237c3aed' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 10px center; background-size: 14px;
+    }
+    html[data-theme="dark"] select.sort { background-color: #151128; }
     html[data-theme="dark"] .benefit-icon { color: #f5bd55; background: rgba(245, 166, 35, .1); }
     html[data-theme="dark"] .benefit h2 { color: var(--ink); }
     html[data-theme="dark"] .benefit p { color: var(--muted); }
