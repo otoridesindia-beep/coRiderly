@@ -182,9 +182,20 @@ async function pineLabsRequest(
     const code = isRecord(result) && typeof result.response_code === "number"
       ? String(result.response_code)
       : "unknown";
-    console.error("Pine Labs API request failed:", { status: response.status, code });
+    const detail = isRecord(result)
+      ? [result.response_message, result.message, result.error_message]
+        .find((item) => typeof item === "string") as string | undefined
+      : undefined;
+    console.error("Pine Labs API request failed:", {
+      status: response.status,
+      code,
+      path,
+      body: result,
+    });
     throw new Error(
-      `Payment provider request failed (HTTP ${response.status}, ${code}).`,
+      `Payment provider request failed (HTTP ${response.status}, ${code})${
+        detail ? `: ${detail.slice(0, 160)}` : ""
+      }.`,
     );
   }
   return result;
