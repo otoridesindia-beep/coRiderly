@@ -461,7 +461,7 @@
     .welcome-brand-wrap { position: relative; width: 100%; }
     .welcome-brand-wrap::before { position: absolute; inset: -.25rem; border-radius: 2rem; background: linear-gradient(90deg, #6d28d9, #4f46e5, var(--welcome-amber)); opacity: .3; filter: blur(1.25rem); content: ""; }
     .welcome-brand-card { min-height: 12rem; padding: 1.5rem; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border: 1px solid rgba(255, 255, 255, .1); border-radius: 1.5rem; background: radial-gradient(ellipse at top, rgba(255, 255, 255, .1), transparent 60%), linear-gradient(135deg, #231749, #1a1236 55%, #120d26); box-shadow: 0 20px 50px -10px rgba(109, 40, 217, .35); }
-    .welcome-logo { display: block; width: min(100%, 12rem); aspect-ratio: 1; border-radius: 1.2rem; object-fit: cover; }
+    .welcome-logo { display: block; width: min(100%, 12rem); height: auto; aspect-ratio: 1; border-radius: 1.2rem; object-fit: cover; }
     .welcome-brand-tagline { margin: .5rem 0 0; color: rgba(255, 255, 255, .55); font-size: .7rem; font-weight: 600; letter-spacing: .15em; text-transform: uppercase; }
     .welcome-onboarding { padding-bottom: .5rem; }
     .welcome-intro-copy { margin-bottom: 1.5rem; }
