@@ -20,6 +20,8 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
     let cards = [...rideList.querySelectorAll('.ride-card')];
     const rideExpirationTimers = new Set();
     const rideVisibilityMs = 24 * 60 * 60 * 1000;
+    // Set to false to bring back the ₹39 Pine Labs payment (also set payments_enabled = 'true' in app_settings).
+    const FREE_POSTING = true;
     const toast = document.getElementById('toast');
     let toastTimer;
     const supabaseUrl = 'https://ecefjyoaqyxdjyjsmpyd.supabase.co';
@@ -958,7 +960,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       event.preventDefault();
       const submitButton = event.currentTarget.querySelector('[type="submit"]');
       submitButton.disabled = true;
-      submitButton.textContent = 'Preparing payment…';
+      submitButton.textContent = FREE_POSTING ? 'Publishing…' : 'Preparing payment…';
       try {
       const value = (id) => document.getElementById(id).value.trim();
       const from = value('offer-from');
@@ -989,6 +991,25 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
         bags: Number(bags || 0),
         price_per_seat: Number(price)
       };
+      let savedRide;
+      if (FREE_POSTING) {
+        savedRide = await supabaseRequest('rest/v1/rpc/publish_free_ride', {
+          method: 'POST',
+          body: JSON.stringify({
+            p_origin: from,
+            p_destination: to,
+            p_pickup_point: pickup,
+            p_travel_date: date,
+            p_departure_time: departure,
+            p_car_model: carName,
+            p_car_registration: carNumber,
+            p_car_capacity: Number(carSeats),
+            p_available_seats: Number(seats),
+            p_bags: Number(bags || 0),
+            p_price_per_seat: Number(price)
+          })
+        });
+      } else {
       const samePendingRide = pendingRideId &&
         JSON.stringify(ride) === JSON.stringify(pendingRideDetails);
       let order;
@@ -1019,9 +1040,10 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       pendingRideDetails = ride;
       submitButton.textContent = 'Complete ₹39 payment…';
       const paymentResult = await openRidePaymentCheckout(order);
-      const savedRide = paymentResult;
+      savedRide = paymentResult;
       pendingRideId = null;
       pendingRideDetails = null;
+      }
       const [hour, minute] = departure.split(':').map(Number);
       const displayTime = new Date(2000, 0, 1, hour, minute).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
       const card = document.createElement('article');
@@ -1059,13 +1081,13 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       document.getElementById('empty').style.display = 'none';
       document.getElementById('offer-success').style.display = 'block';
       showOfferScreen(false);
-      showToast('✅ Payment successful! Your ride has been posted successfully.', 6000);
+      showToast(FREE_POSTING ? '✅ Your ride has been posted successfully.' : '✅ Payment successful! Your ride has been posted successfully.', 6000);
       event.target.reset();
       } catch (error) {
         showToast(error.message);
       } finally {
         submitButton.disabled = false;
-        submitButton.textContent = 'Pay ₹39 & publish ride';
+        submitButton.textContent = FREE_POSTING ? 'Publish ride' : 'Pay ₹39 & publish ride';
       }
     });
 
