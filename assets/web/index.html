@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>CoRiderly | Carpooling and shared rides in India</title>
   <meta name="description" content="Find affordable shared rides or offer a seat with CoRiderly. Connect with people travelling your way across India." />
   <link rel="canonical" href="https://coriderly.in/" />
@@ -26,6 +26,7 @@
     }
   </script>
   <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="preconnect" href="https://ecefjyoaqyxdjyjsmpyd.supabase.co" />
   <meta name="theme-color" content="#7c3aed" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -53,7 +54,7 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <section class="welcome-screen" id="welcome-screen" aria-label="Welcome to CoRiderly">
+  <main class="welcome-screen" id="welcome-screen" aria-label="Welcome to CoRiderly">
     <header class="welcome-top-bar">
       <div class="welcome-badge">
         <span class="welcome-badge-dot" aria-hidden="true"></span>
@@ -65,11 +66,11 @@
     <section class="welcome-brand-section" aria-label="CoRiderly brand">
       <div class="welcome-brand-wrap">
         <div class="welcome-brand-card">
-          <img class="welcome-logo" src="logo.png" alt="CoRiderly" />
+          <img class="welcome-logo" src="logo.webp" width="336" height="336" fetchpriority="high" alt="CoRiderly" />
           <p class="welcome-brand-tagline">Shared rides, simpler journeys</p>
         </div>
       </div>
-    </section>
+    </main>
 
     <section class="welcome-onboarding">
       <div class="welcome-intro-copy">
@@ -104,7 +105,7 @@
   </section>
   <section class="splash-screen" id="splash-screen" aria-label="CoRiderly sign in" hidden>
     <div class="splash-story">
-      <div class="splash-brand"><span class="splash-mark" aria-hidden="true"><img src="logo_small.png" alt=""></span>CoRiderly</div>
+      <div class="splash-brand"><span class="splash-mark" aria-hidden="true"><img src="logo_small.webp" width="128" height="128" alt=""></span>CoRiderly</div>
       <div class="splash-copy">
         <div class="eyebrow">Better journeys, together</div>
         <h1>Your next ride starts here.</h1>
@@ -141,7 +142,7 @@
   <div class="app" id="main-app" hidden>
     <header class="topbar">
       <div class="brand">
-        <div class="brand-mark" aria-hidden="true"><img src="logo_small.png" alt="">
+        <div class="brand-mark" aria-hidden="true"><img src="logo_small.webp" width="128" height="128" alt="">
         </div>
         <span>CoRiderly</span>
       </div>

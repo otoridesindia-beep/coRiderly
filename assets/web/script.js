@@ -1270,7 +1270,10 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       box.hidden = false;
     }).catch(function () {});
   }
-  refreshStats();
+  var scheduleRefresh = window.requestIdleCallback || function (callback) {
+    window.setTimeout(callback, 1500);
+  };
+  scheduleRefresh(refreshStats);
   if (mainApp) {
     new MutationObserver(function () { if (!mainApp.hidden) refreshStats(); })
       .observe(mainApp, { attributes: true, attributeFilter: ['hidden'] });
