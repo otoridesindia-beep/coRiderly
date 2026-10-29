@@ -1113,6 +1113,28 @@
     html[data-theme="light"] .welcome-button-secondary { border-color: var(--line); color: var(--ink); background: #fff; }
     html[data-theme="light"] .welcome-button-secondary:hover { background: var(--purple-soft); }
     html[data-theme="light"] .welcome-login-prompt a { color: var(--purple-dark); }
+    html[data-theme="light"] .welcome-screen {
+      background: radial-gradient(circle at 85% 0%, #efe6ff 0, transparent 45%), radial-gradient(circle at 0% 100%, #fff1d6 0, transparent 40%), #faf9fc;
+    }
+    html[data-theme="light"] .welcome-badge { box-shadow: 0 4px 12px rgba(40, 29, 78, .06); }
+    html[data-theme="light"] .welcome-badge-dot { box-shadow: 0 0 0 4px rgba(245, 166, 35, .2); }
+    html[data-theme="light"] .welcome-brand-card {
+      background: linear-gradient(160deg, #ffffff 0%, #f3ecff 60%, #e9ddff 100%);
+      border-color: #e4d9fb;
+      box-shadow: 0 24px 50px -18px rgba(109, 40, 217, .35), 0 2px 6px rgba(40, 29, 78, .05);
+    }
+    html[data-theme="light"] .welcome-logo { box-shadow: 0 14px 30px -10px rgba(40, 20, 90, .45); }
+    html[data-theme="light"] .welcome-brand-tagline { color: #6b6585; }
+    html[data-theme="light"] .welcome-eyebrow { color: #b45309; }
+    html[data-theme="light"] .welcome-intro-copy h1 {
+      background: linear-gradient(135deg, #1f1a3a 30%, #6d28d9 100%);
+      -webkit-background-clip: text; background-clip: text;
+      color: transparent; -webkit-text-fill-color: transparent;
+    }
+    html[data-theme="light"] .welcome-journey-card { box-shadow: 0 10px 26px -14px rgba(40, 29, 78, .25); }
+    html[data-theme="light"] .welcome-journey-note { color: #b45309; }
+    html[data-theme="light"] .welcome-button-primary { box-shadow: 0 12px 26px -8px rgba(245, 166, 35, .65); }
+    html[data-theme="light"] .welcome-button-secondary { border-color: #d8c9f5; color: var(--purple-dark); font-weight: 700; }
 
     .install-banner {
       position: fixed;
