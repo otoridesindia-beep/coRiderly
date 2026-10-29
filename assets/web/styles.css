@@ -90,6 +90,13 @@
     .login-fields { display: grid; gap: 15px; }
     .login-fields input { width: 100%; height: 46px; padding: 0 13px; border: 1px solid #e8e6ee; border-radius: 10px; color: var(--ink); background: white; }
     .login-fields input:focus { outline: 2px solid rgba(107, 27, 141, .2); border-color: var(--purple); }
+    .pin-wrap { position: relative; }
+    .login-fields .pin-wrap input { padding-right: 46px; }
+    .pin-wrap .pin-toggle, .pin-wrap .pin-toggle:not(:disabled) { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; color: var(--muted); background: transparent; cursor: pointer; }
+    .pin-toggle:hover { color: var(--purple); }
+    .pin-toggle svg { width: 20px; height: 20px; }
+    .pin-toggle .eye-closed, .pin-toggle.showing .eye-open { display: none; }
+    .pin-toggle.showing .eye-closed { display: block; }
     .driver-documents { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px; padding: 15px; border: 1px solid var(--line); border-radius: 12px; background: var(--canvas); }
     .driver-documents[hidden] { display: none; }
     .driver-documents h3 { grid-column: 1 / -1; margin: 0; font-size: 15px; }

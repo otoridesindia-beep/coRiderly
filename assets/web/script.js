@@ -576,6 +576,14 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
     const authHeading = document.getElementById('auth-heading');
     const authSubmit = document.querySelector('#login-form [type="submit"]');
     const authPin = document.getElementById('login-pin');
+    const pinToggle = document.getElementById('pin-toggle');
+    pinToggle.addEventListener('click', function () {
+      const show = authPin.type === 'password';
+      authPin.type = show ? 'text' : 'password';
+      pinToggle.classList.toggle('showing', show);
+      pinToggle.setAttribute('aria-pressed', String(show));
+      pinToggle.setAttribute('aria-label', show ? 'Hide MPIN' : 'Show MPIN');
+    });
     const authNote = document.getElementById('login-note');
 
     function setAuthMode(mode) {
