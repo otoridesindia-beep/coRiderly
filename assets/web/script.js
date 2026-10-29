@@ -357,7 +357,8 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
           ? `91${normalizedPhone}`
           : normalizedPhone;
         card.querySelector('.ride-call-action').href = `tel:${phone.replace(/[^\d+]/g, '')}`;
-        card.querySelector('.ride-whatsapp-action').href = `https://wa.me/${whatsappPhone}`;
+        const waText = `Hello, is a seat available for your ride from ${ride.origin} to ${ride.destination} on ${ride.travel_date} at ${format12h(`${hours}:${minutes}`)}? (via CoRiderly)`;
+        card.querySelector('.ride-whatsapp-action').href = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(waText)}`;
       } else {
         card.querySelector('.ride-call-action').remove();
         card.querySelector('.ride-whatsapp-action').remove();
