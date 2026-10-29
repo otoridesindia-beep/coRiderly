@@ -1105,3 +1105,51 @@
     html[data-theme="light"] .welcome-button-secondary { border-color: var(--line); color: var(--ink); background: #fff; }
     html[data-theme="light"] .welcome-button-secondary:hover { background: var(--purple-soft); }
     html[data-theme="light"] .welcome-login-prompt a { color: var(--purple-dark); }
+
+    .install-banner {
+      position: fixed;
+      z-index: 30;
+      right: 12px;
+      bottom: calc(84px + env(safe-area-inset-bottom));
+      left: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      max-width: 440px;
+      margin: 0 auto;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      color: var(--ink);
+      background: var(--surface);
+      box-shadow: 0 14px 38px rgba(40, 29, 78, .22);
+    }
+    .install-banner-icon { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 11px; object-fit: cover; }
+    .install-banner-copy { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; font-size: 13px; line-height: 1.35; }
+    .install-banner-copy strong { font-size: 14px; }
+    .install-banner-copy span { color: var(--muted); }
+    .install-banner-action {
+      flex: 0 0 auto;
+      padding: 9px 16px;
+      border: 0;
+      border-radius: 10px;
+      color: #fff;
+      background: var(--purple);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .install-banner-close {
+      flex: 0 0 auto;
+      width: 28px;
+      height: 28px;
+      border: 0;
+      border-radius: 50%;
+      color: var(--muted);
+      background: transparent;
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    html[data-theme="dark"] .install-banner { color: #fff; background: #211a34; }
