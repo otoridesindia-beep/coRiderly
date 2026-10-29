@@ -1133,7 +1133,8 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
         'Ride on CoRiderly',
         `${card.querySelector('.ride-origin')?.textContent || ''} → ${card.querySelector('.ride-destination')?.textContent || ''}`,
         `${card.querySelector('.ride-travel-date')?.textContent || ''} ${card.querySelector('.ride-departure-time')?.textContent || ''}`.trim(),
-        `${card.querySelector('.ride-fare-amount')?.textContent || ''} per seat`
+        `${card.querySelector('.ride-fare-amount')?.textContent || ''} per seat`,
+        'Book your seat: https://coriderly.in'
       ].join('\n');
       try {
         if (navigator.share) {
