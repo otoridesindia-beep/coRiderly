@@ -9,7 +9,7 @@ const corsHeaders = {
 
 const PAYMENT_AMOUNT_PAISE = 3900;
 const PROVIDER = "pinelabs";
-const DEFAULT_CALLBACK_URL = "https://otoridesindia-beep.github.io/coRiderly/";
+const DEFAULT_CALLBACK_URL = "https://coriderly.in/";
 const PINELABS_ENDPOINTS = {
   uat: "https://pluraluat.v2.pinepg.in",
   production: "https://api.pluralpay.in",

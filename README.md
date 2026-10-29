@@ -6,9 +6,9 @@ Flutter ride-sharing app with Supabase authentication.
 
 The legal pages are published through GitHub Pages:
 
-- Terms and Conditions: https://otoridesindia-beep.github.io/coRiderly/terms.html
-- Privacy Policy: https://otoridesindia-beep.github.io/coRiderly/privacy.html
-- Refund Policy: https://otoridesindia-beep.github.io/coRiderly/refund.html
+- Terms and Conditions: https://coriderly.in/terms.html
+- Privacy Policy: https://coriderly.in/privacy.html
+- Refund Policy: https://coriderly.in/refund.html
 
 ## Phone and 4-digit MPIN setup
 
@@ -95,7 +95,7 @@ supabase secrets set --project-ref ecefjyoaqyxdjyjsmpyd `
   PINELABS_CLIENT_ID=<client-id> `
   PINELABS_CLIENT_SECRET=<client-secret> `
   PINELABS_ENV=uat `
-  PINELABS_CALLBACK_URL=https://otoridesindia-beep.github.io/coRiderly/
+  PINELABS_CALLBACK_URL=https://coriderly.in/
 supabase functions deploy ride-payment --project-ref ecefjyoaqyxdjyjsmpyd
 ```
 
