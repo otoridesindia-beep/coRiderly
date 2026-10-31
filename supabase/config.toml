@@ -3,3 +3,6 @@ verify_jwt = false
 
 [functions.ride-payment]
 verify_jwt = false
+
+[functions.new-ride-notification]
+verify_jwt = false

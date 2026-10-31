@@ -38,6 +38,69 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
     let currentUserId = null;
     let pendingRideId = null;
     let pendingRideDetails = null;
+    const sessionStorageKey = 'coriderly-session';
+    let refreshInFlight = null;
+
+    function readSavedSession() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(sessionStorageKey) || 'null');
+        return saved && saved.access_token && saved.refresh_token && saved.userId ? saved : null;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function storeSessionTokens(tokens) {
+      try {
+        localStorage.setItem(sessionStorageKey, JSON.stringify({
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+          userId: tokens.userId
+        }));
+      } catch (error) { /* Stay logged in for this tab if storage is unavailable. */ }
+    }
+
+    function clearSavedSession() {
+      try { localStorage.removeItem(sessionStorageKey); } catch (error) { /* Nothing to clear. */ }
+    }
+
+    // Returns true when a new access token was obtained. Only an explicit rejection ends the saved session.
+    function refreshSession() {
+      const saved = readSavedSession();
+      if (!saved) return Promise.resolve(false);
+      if (refreshInFlight) return refreshInFlight;
+      refreshInFlight = (async () => {
+        try {
+          const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+            method: 'POST',
+            headers: { apikey: supabaseAnonKey, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: saved.refresh_token })
+          });
+          if (!response.ok) {
+            if (response.status >= 400 && response.status < 500) {
+              clearSavedSession();
+              accessToken = null;
+              currentUserId = null;
+            }
+            return false;
+          }
+          const result = await response.json();
+          if (!result.access_token || !result.refresh_token) return false;
+          accessToken = result.access_token;
+          storeSessionTokens({
+            access_token: result.access_token,
+            refresh_token: result.refresh_token,
+            userId: saved.userId
+          });
+          return true;
+        } catch (error) {
+          return false;
+        } finally {
+          refreshInFlight = null;
+        }
+      })();
+      return refreshInFlight;
+    }
     const paymentDialog = document.getElementById('payment-dialog');
     const paymentFrame = document.getElementById('payment-frame');
     const verifyPaymentButton = document.getElementById('verify-payment-button');
@@ -124,7 +187,13 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
         'Content-Type': 'application/json',
         ...options.headers
       };
-      const response = await fetch(`${supabaseUrl}/${path}`, { ...options, headers });
+      let response = await fetch(`${supabaseUrl}/${path}`, { ...options, headers });
+      if (response.status === 401 && await refreshSession()) {
+        response = await fetch(`${supabaseUrl}/${path}`, {
+          ...options,
+          headers: { ...headers, Authorization: `Bearer ${accessToken}` }
+        });
+      }
       const responseText = await response.text();
       let result = null;
       if (responseText) {
@@ -675,6 +744,11 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
         }
         accessToken = result.access_token;
         currentUserId = result.userId;
+        storeSessionTokens({
+          access_token: result.access_token,
+          refresh_token: result.refresh_token,
+          userId: result.userId
+        });
         profileData = {
           ...profileData,
           name,
@@ -733,6 +807,7 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
     function signOut() {
       accessToken = null;
       currentUserId = null;
+      clearSavedSession();
       bookings.splice(0, bookings.length);
       pendingRideId = null;
       pendingRideDetails = null;
@@ -1230,6 +1305,33 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
         if (button.isConnected) button.disabled = false;
       }
     });
+
+    // Restore a saved login so refreshes and restarts keep the user signed in until they log out.
+    (async function restoreSession() {
+      const saved = readSavedSession();
+      if (!saved) return;
+      accessToken = saved.access_token;
+      currentUserId = saved.userId;
+      document.getElementById('welcome-screen').hidden = true;
+      try {
+        await loadRides();
+        try {
+          await loadBookings();
+        } catch (error) {
+          showToast(`Could not load bookings and reviews: ${error.message}`);
+        }
+      } catch (error) {
+        if (!accessToken) {
+          document.getElementById('welcome-screen').hidden = false;
+          return;
+        }
+        showToast(error.message);
+      }
+      updateProfileDisplay();
+      document.getElementById('splash-screen').hidden = true;
+      document.getElementById('main-app').hidden = false;
+      showOfferScreen(false);
+    })();
 (function () {
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
