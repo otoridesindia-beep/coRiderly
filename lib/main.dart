@@ -654,6 +654,7 @@ class Ride {
     required this.driver,
     required this.phone,
     this.travelDate,
+    this.vehicleNumber = '',
     this.mine = false,
   });
 
@@ -664,6 +665,7 @@ class Ride {
   final String phone;
   final int price;
   final DateTime? travelDate;
+  final String vehicleNumber;
   int seats;
   final bool mine;
 }
@@ -1127,6 +1129,25 @@ class _RideHomeState extends State<RideHome> {
                                   ),
                                 ],
                               ),
+                              if (ride.vehicleNumber.isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.confirmation_number_outlined,
+                                      size: 18,
+                                      color: muted,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Vehicle number: ${ride.vehicleNumber}',
+                                        style: const TextStyle(color: muted),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                               const Divider(height: 22),
                               Row(
                                 children: [
@@ -1435,6 +1456,7 @@ class _OfferRidePageState extends State<OfferRidePage> {
         driver: widget.driverName,
         phone: '',
         travelDate: _travelDate,
+        vehicleNumber: _vehicleNumber.text.trim(),
         mine: true,
       ),
     );

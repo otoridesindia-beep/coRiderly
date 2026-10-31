@@ -586,6 +586,29 @@
       font-weight: 750;
       letter-spacing: .45px;
     }
+    .ride-card-modern .ride-vehicle {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 5px 10px;
+      margin: 0 0 22px 49px;
+      padding: 11px 14px;
+      border: 1px solid #e7e3ec;
+      border-radius: 12px;
+      background: #faf9fc;
+    }
+    .ride-card-modern .ride-vehicle[hidden] { display: none; }
+    .ride-card-modern .ride-vehicle > span {
+      color: #77758a;
+      font-size: 11px;
+      font-weight: 750;
+      letter-spacing: .45px;
+    }
+    .ride-card-modern .ride-vehicle > strong {
+      overflow-wrap: anywhere;
+      color: #17182c;
+      font-size: 15px;
+    }
     .ride-card-modern .ride-driver {
       display: flex;
       align-items: center;
@@ -859,6 +882,8 @@
     html[data-theme="dark"] .app-address strong { display: block; margin-bottom: 4px; color: var(--ink, inherit); }
     html[data-theme="dark"] .app-address address { font-style: normal; }
     html[data-theme="dark"] .app-address a { display: inline-block; margin-bottom: 6px; color: var(--accent, #8b7cff); text-decoration: underline; }
+    .app-credit { margin: 8px 0 0; font-size: 12px; }
+    .app-credit span { color: var(--ink); font-weight: 700; }
     html[data-theme="dark"] .profile-menu button { color: var(--ink); }
     html[data-theme="dark"] .profile-menu button:hover { color: #ffd47d; background: rgba(245, 166, 35, .1); }
     html[data-theme="dark"] .profile-menu .logout-action { border-top-color: var(--line); color: #ff9696; }
@@ -1071,8 +1096,14 @@
     html[data-theme="dark"] .ride-posted strong { color: #c4a5ff; }
     html[data-theme="dark"] .ride-card-modern .ride-stops > span,
     html[data-theme="dark"] .ride-card-modern .ride-pickup > span,
+    html[data-theme="dark"] .ride-card-modern .ride-vehicle > span,
     html[data-theme="dark"] .ride-card-modern .ride-driver-caption,
     html[data-theme="dark"] .ride-card-modern .ride-fare > span:nth-child(2) { color: var(--muted); }
+    html[data-theme="dark"] .ride-card-modern .ride-vehicle {
+      border-color: var(--line);
+      background: #100d20;
+    }
+    html[data-theme="dark"] .ride-card-modern .ride-vehicle > strong { color: var(--ink); }
     html[data-theme="dark"] .ride-card-modern .ride-feedback-link { color: #c4a5ff; }
     html[data-theme="dark"] .ride-card-modern .ride-feedback-link:hover { color: #ffd47d; }
     html[data-theme="dark"] .ride-card-modern .ride-stop-dot { background: #151128; }

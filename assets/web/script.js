@@ -292,6 +292,10 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
             <strong class="ride-destination"></strong>
           </div>
         </div>
+        <div class="ride-vehicle" hidden>
+          <span>VEHICLE NUMBER</span>
+          <strong></strong>
+        </div>
         <div class="ride-driver">
           <div class="ride-driver-avatar"></div>
           <div class="ride-driver-copy">
@@ -339,6 +343,12 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
       card.querySelector('.ride-stops').classList.add('places');
       card.querySelector('.ride-pickup strong').textContent = ride.pickup_point || 'Pickup point not specified';
       card.querySelector('.ride-destination').textContent = ride.destination;
+      const vehicle = card.querySelector('.ride-vehicle');
+      const vehicleNumber = String(ride.car_registration || '').trim();
+      if (vehicleNumber) {
+        vehicle.querySelector('strong').textContent = vehicleNumber;
+        vehicle.hidden = false;
+      }
       card.querySelector('.ride-driver-avatar').textContent = initials;
       card.querySelector('.ride-driver-name').textContent = name;
       card.querySelector('.ride-driver-caption').textContent = isMine ? 'Your ride' : 'CoRiderly member';
